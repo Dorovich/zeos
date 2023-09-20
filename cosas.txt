@@ -1,0 +1,6 @@
+herramientas para revisar cosas:
+- objdump
+- nm
+- gdb
+
+zeos.bin = { BOOT + SYSTEM + USER }
