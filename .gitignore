@@ -1,0 +1,10 @@
+*.o
+*.s
+*.out
+bochsout.txt
+system
+bootsect
+zeos.bin
+user
+*~
+build
