@@ -83,7 +83,16 @@ void setIdt()
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
+  setInterruptHandler(33, keyboard_handler, 0);
 
   set_idt_reg(&idtR);
 }
 
+void keyboard_routine()
+{
+        printk("hola");
+	unsigned char data = inb(0x60);
+	if ((data & 0x80) == 0) {
+		printc_xy(0, 0, char_map[data & 0x7F]);
+	}
+}

@@ -47,7 +47,30 @@
       pushl %ebx; \
       pushl %ecx; \
       pushl %edx; \
-      movl $__KERNEL_DS, %edx;    \
-      movl %edx, %ds;           \
+      movl $__KERNEL_DS, %edx; \
+      movl %edx, %ds; \
       movl %edx, %es
 
+#define RESTORE_ALL \
+      pushl %edx; \
+      pushl %ecx; \
+      pushl %ebx; \
+      pushl %esi; \
+      pushl %edi; \
+      pushl %ebp; \
+      pushl %eax; \
+      pushl %ds; \
+      pushl %es; \
+      pushl %fs; \
+      pushl %gs;
+
+#define EOI \
+	  movb $0x20, %al; \
+	  outb %al, $0x20;
+
+ENTRY(keyboard_handler)
+	SAVE_ALL
+	EOI
+	call keyboard_routine
+	RESTORE_ALL
+	iret

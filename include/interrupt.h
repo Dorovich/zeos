@@ -17,4 +17,7 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL);
 
 void setIdt();
 
+void keyboard_handler();
+void keyboard_routine();
+
 #endif  /* __INTERRUPT_H__ */
