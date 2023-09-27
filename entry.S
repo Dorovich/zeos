@@ -52,25 +52,41 @@
       movl %edx, %es
 
 #define RESTORE_ALL \
-      pushl %edx; \
-      pushl %ecx; \
-      pushl %ebx; \
-      pushl %esi; \
-      pushl %edi; \
-      pushl %ebp; \
-      pushl %eax; \
-      pushl %ds; \
-      pushl %es; \
-      pushl %fs; \
-      pushl %gs;
+      popl %edx; \
+      popl %ecx; \
+      popl %ebx; \
+      popl %esi; \
+      popl %edi; \
+      popl %ebp; \
+      popl %eax; \
+      popl %ds; \
+      popl %es; \
+      popl %fs; \
+      popl %gs
 
 #define EOI \
-	  movb $0x20, %al; \
-	  outb %al, $0x20;
+      movb $0x20, %al; \
+      outb %al, $0x20
 
 ENTRY(keyboard_handler)
 	SAVE_ALL
 	EOI
 	call keyboard_routine
+	RESTORE_ALL
+	iret
+
+ENTRY(system_call_handler)
+	SAVE_ALL
+	//EOI
+        cmpl $0, %eax
+        jl err
+        cmpl $MAX_SYSCALL, %eax
+        jg err
+	call *sys_call_table(, %eax, 0x4)
+        jmp end
+err:
+        movl $-38, %eax
+end:
+        movl %eax, 0x18(%esp)
 	RESTORE_ALL
 	iret

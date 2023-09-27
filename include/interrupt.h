@@ -20,4 +20,6 @@ void setIdt();
 void keyboard_handler();
 void keyboard_routine();
 
+void system_call_handler();
+
 #endif  /* __INTERRUPT_H__ */

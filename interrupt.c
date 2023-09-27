@@ -84,15 +84,17 @@ void setIdt()
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
   setInterruptHandler(33, keyboard_handler, 0);
+  setTrapHandler(0x80, system_call_handler, 3);
 
   set_idt_reg(&idtR);
 }
 
 void keyboard_routine()
 {
-        printk("hola");
-	unsigned char data = inb(0x60);
-	if ((data & 0x80) == 0) {
-		printc_xy(0, 0, char_map[data & 0x7F]);
-	}
+    unsigned char data = inb(0x60);
+    if ((data & 0x80) == 0) {
+        unsigned char c = char_map[data & 0x7F];
+        if (c != '\0') printc_xy(0, 0, c);
+        else printc_xy(0, 0, 'C');
+    }
 }

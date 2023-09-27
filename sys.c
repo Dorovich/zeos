@@ -43,5 +43,17 @@ int sys_fork()
 }
 
 void sys_exit()
-{  
+{
+}
+
+int sys_write(int fd, char *buffer, int size)
+{
+    int valido = check_fd(fd, ESCRIPTURA);
+    if (valido < 0) return valido;
+    if (buffer == NULL) return -1;
+    if (size < 0) return -1;
+
+    if (fd == 1) return sys_write_console(buffer, size);
+
+    return 0;
 }

@@ -14,7 +14,10 @@ int __attribute__ ((__section__(".text.main")))
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
 
   /* int r = add(0x69, 0b010101001); */
-  int r = addAsm(32, 37);
+  /* int r = addAsm(32, 37); */
+
+  char msg[9] = "Hola xd.";
+  write(1, msg, 9);
     
   while(1);
 }
