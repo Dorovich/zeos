@@ -43,3 +43,7 @@ int strlen(char *a)
   return i;
 }
 
+int perror()
+{
+    return errno;
+}
