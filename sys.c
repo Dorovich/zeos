@@ -2,15 +2,10 @@
  * sys.c - Syscalls implementation
  */
 #include <devices.h>
-
 #include <utils.h>
-
 #include <io.h>
-
 #include <mm.h>
-
 #include <mm_address.h>
-
 #include <sched.h>
 
 #define LECTURA 0
@@ -56,4 +51,9 @@ int sys_write(int fd, char *buffer, int size)
     if (fd == 1) return sys_write_console(buffer, size);
 
     return 0;
+}
+
+int sys_gettime()
+{
+    return zeos_ticks;
 }

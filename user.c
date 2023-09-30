@@ -18,6 +18,12 @@ int __attribute__ ((__section__(".text.main")))
 
   char msg[9] = "Hola xd.";
   write(1, msg, 9);
-    
+
+  int t = gettime();
+
+  for(int i = 0; i < 1000000000; ++i);
+
+  t = gettime();
+
   while(1);
 }

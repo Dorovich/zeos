@@ -15,12 +15,33 @@ ENTRY(write)
         int $0x80
 
         cmpl $0, %eax
-        jge end
-err:
+        jge end_write
+err_write:
         neg %eax
         movl %eax, errno
         movl $-1, %eax
-end:    
+end_write:    
+        popl %ebx
+        movl %ebp, %esp
+        popl %ebp
+        ret
+
+ENTRY(gettime)
+        pushl %ebp
+        movl %esp, %ebp
+        pushl %ebx
+
+        // excepcion
+        movl $10, %eax
+        int $0x80
+
+        cmpl $0, %eax
+        jge end_gettime
+err_gettime:
+        neg %eax
+        movl %eax, errno
+        movl $-1, %eax
+end_gettime:    
         popl %ebx
         movl %ebp, %esp
         popl %ebp

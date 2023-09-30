@@ -1,11 +1,11 @@
 /*
  * interrupt.c -
  */
-#include <types.h>
-#include <interrupt.h>
-#include <segment.h>
 #include <hardware.h>
 #include <io.h>
+#include <interrupt.h>
+#include <types.h>
+#include <segment.h>
 
 #include <zeos_interrupt.h>
 
@@ -83,6 +83,7 @@ void setIdt()
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
+  setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
   setTrapHandler(0x80, system_call_handler, 3);
 
@@ -97,4 +98,10 @@ void keyboard_routine()
         if (c != '\0') printc_xy(0, 0, c);
         else printc_xy(0, 0, 'C');
     }
+}
+
+void clock_routine ()
+{
+    ++zeos_ticks;
+    zeos_show_clock();
 }
