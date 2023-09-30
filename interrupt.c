@@ -9,6 +9,8 @@
 
 #include <zeos_interrupt.h>
 
+#include <libc.h>
+
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 
@@ -83,6 +85,7 @@ void setIdt()
   set_handlers();
 
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
+  setInterruptHandler(14, page_fault_handler_custom, 0);
   setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
   setTrapHandler(0x80, system_call_handler, 3);
@@ -100,8 +103,21 @@ void keyboard_routine()
     }
 }
 
-void clock_routine ()
+void clock_routine()
 {
     ++zeos_ticks;
     zeos_show_clock();
+}
+
+void page_fault_routine_custom()
+{
+    int addr;
+    char addr_buf[32];
+
+    __asm__ __volatile__ ("movl 56(%%ebp), %0" : "=r" (addr));
+    itoa(addr, addr_buf);
+
+    printk("Process generates a PAGE FAULT exception at EIP: 0x");
+    printk(addr_buf);
+    while(1);
 }

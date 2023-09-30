@@ -68,6 +68,8 @@
       movb $0x20, %al; \
       outb %al, $0x20
 
+/* interruptions */
+
 ENTRY(keyboard_handler)
 	SAVE_ALL
 	EOI
@@ -81,6 +83,17 @@ ENTRY(clock_handler)
 	call clock_routine
 	RESTORE_ALL
 	iret
+
+/* exceptions */
+        
+ENTRY(page_fault_handler_custom)
+        SAVE_ALL
+        call page_fault_routine_custom
+        RESTORE_ALL
+        add $4, %esp
+        iret
+
+/* syscalls */
 
 ENTRY(system_call_handler)
 	SAVE_ALL
