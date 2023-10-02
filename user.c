@@ -16,17 +16,9 @@ int __attribute__ ((__section__(".text.main")))
   /* int r = add(0x69, 0b010101001); */
   /* int r = addAsm(32, 37); */
 
-  char msg[9] = "Hola xd.";
-  write(1, msg, 9);
-
-  char* p = 0;
-  *p = 'x';
-
-  int t = gettime();
-
-  for(int i = 0; i < 10000000; ++i);
-
-  t = gettime();
+  char msg[256] = "Hola xd.";
+  write(-1, msg, strlen(msg));
+  perror();
 
   while(1);
 }
