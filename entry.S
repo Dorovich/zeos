@@ -98,14 +98,37 @@ ENTRY(page_fault_handler_custom)
 ENTRY(system_call_handler)
 	SAVE_ALL
         cmpl $0, %eax
-        jl err
+        jl err_int
         cmpl $MAX_SYSCALL, %eax
-        jg err
+        jg err_int
 	call *sys_call_table(, %eax, 0x4)
-        jmp end
-err:
+        jmp end_int
+err_int:
         movl $-38, %eax
-end:
+end_int:
         movl %eax, 0x18(%esp)
 	RESTORE_ALL
 	iret
+
+ENTRY(system_call_handler_fast)
+	push $__USER_DS
+	push %ebp // User stack address
+	pushfl
+	push $__USER_CS
+	push 4(%ebp) // User return address
+	SAVE_ALL
+        cmpl $0, %eax
+        jl err_sysenter
+        cmpl $MAX_SYSCALL, %eax
+        jg err_sysenter
+	call *sys_call_table(, %eax, 0x4)
+        jmp end_sysenter
+err_sysenter:
+        movl $-38, %eax
+end_sysenter:
+        movl %eax, 0x18(%esp)
+	RESTORE_ALL
+	movl (%esp), %edx // Return address
+	movl 12(%esp), %ecx // User stack address
+	sti // Enable interrupts again
+	sysexit

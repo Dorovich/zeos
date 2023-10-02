@@ -12,7 +12,17 @@ ENTRY(write)
 
         // excepcion
         movl $4, %eax
-        int $0x80
+	push %ecx
+	push %edx
+	push cont_write
+	push %ebp
+	mov %esp, %esp
+	sysenter
+cont_write:
+	pop %ebp
+	addl $4, %ebp
+	pop %edx
+	pop %ecx
 
         cmpl $0, %eax
         jge end_write
@@ -33,7 +43,17 @@ ENTRY(gettime)
 
         // excepcion
         movl $10, %eax
-        int $0x80
+	push %ecx
+	push %edx
+	push cont_gettime
+	push %ebp
+	mov %esp, %esp
+	sysenter
+cont_gettime:
+	pop %ebp
+	addl $4, %ebp
+	pop %edx
+	pop %ecx
 
         cmpl $0, %eax
         jge end_gettime
