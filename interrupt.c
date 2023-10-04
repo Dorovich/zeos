@@ -94,7 +94,7 @@ void setIdt()
 
   writeMSR(0x174, __KERNEL_CS);
   writeMSR(0x175, INITIAL_ESP);
-  writeMSR(0x176, &system_call_handler_fast);
+  writeMSR(0x176, (int)&system_call_handler_fast);
 
   set_idt_reg(&idtR);
 }
