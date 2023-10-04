@@ -20,7 +20,7 @@ int __attribute__ ((__section__(".text.main")))
   write(1, msg, 9);
 
   char* p = 0;
-  *p = 'x';
+  *p = 'x'; // 0x114040
 
   int t = gettime();
 

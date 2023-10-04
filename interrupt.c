@@ -115,9 +115,9 @@ void page_fault_routine_custom()
     char addr_buf[32];
 
     __asm__ __volatile__ ("movl 56(%%ebp), %0" : "=r" (addr));
-    itoa(addr, addr_buf);
+    itoh(addr, addr_buf);
 
-    printk("Process generates a PAGE FAULT exception at EIP: 0x");
+    printk("Process generates a PAGE FAULT exception at EIP: ");
     printk(addr_buf);
     while(1);
 }

@@ -24,4 +24,6 @@ void exit();
 
 int perror();
 
+void itoh(int a, char *b);
+
 #endif  /* __LIBC_H__ */
