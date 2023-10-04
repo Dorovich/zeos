@@ -14,6 +14,8 @@
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 
+void writeMSR(int number, int value);
+
 char char_map[] =
 {
   '\0','\0','1','2','3','4','5','6',
@@ -89,6 +91,10 @@ void setIdt()
   setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
   setTrapHandler(0x80, system_call_handler, 3);
+
+  writeMSR(0x174, __KERNEL_CS);
+  writeMSR(0x175, INITIAL_ESP);
+  writeMSR(0x176, &system_call_handler_fast);
 
   set_idt_reg(&idtR);
 }

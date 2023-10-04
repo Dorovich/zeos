@@ -45,7 +45,9 @@ int strlen(char *a)
 
 int perror()
 {
-    return errno;
+    char errmsg[100];
+    itoa(errno, errmsg);
+    write(1, errmsg, strlen(errmsg));
 }
 
 void itoh(int a, char *b)

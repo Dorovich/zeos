@@ -27,5 +27,6 @@ void clock_handler();
 void clock_routine();
 
 void system_call_handler();
+void system_call_handler_fast();
 
 #endif  /* __INTERRUPT_H__ */
