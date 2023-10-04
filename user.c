@@ -27,11 +27,19 @@ int __attribute__ ((__section__(".text.main")))
 
   /* t = gettime(); */
 
-  for(int i = 0; i < 10; ++i) {
-      char num[256];
-      itoa(i, num);
-      write(1, num, strlen(num));
-  }
+  
+  char num[256];
+  int n = 12345;
+  itoa(n, num);
+  itoa(n, num);
+  int len = strlen(num);
+  write(1, num, len);
+  
+  int n2 = 67890;
+  itoa(n2, num);
+  len = strlen(num);
+  write(1, num, len);
+  write(1, num, len);
   
   while(1);
 }
