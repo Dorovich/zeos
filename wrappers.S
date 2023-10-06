@@ -14,13 +14,13 @@ ENTRY(write)
         movl $4, %eax
 	push %ecx
 	push %edx
-	push cont_write
+	push $cont_write
 	push %ebp
-	mov %esp, %esp
+	mov %esp, %ebp
 	sysenter
 cont_write:
 	pop %ebp
-	addl $4, %ebp
+	addl $4, %esp
 	pop %edx
 	pop %ecx
 
@@ -45,9 +45,9 @@ ENTRY(gettime)
         movl $10, %eax
 	push %ecx
 	push %edx
-	push cont_gettime
+	push $cont_gettime
 	push %ebp
-	mov %esp, %esp
+	mov %esp, %ebp
 	sysenter
 cont_gettime:
 	pop %ebp

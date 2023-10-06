@@ -18,7 +18,7 @@ void itoh(int a, char *b)
   {
     tmp=(a%16);
     if (tmp<10) b[i]=tmp+'0';
-    else b[i]=tmp+'a';
+    else b[i]=tmp-10+'a';
     a=a/16;
     i++;
   }
