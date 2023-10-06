@@ -2,3 +2,6 @@
 
 + [[https://docencia.ac.upc.edu/FIB/grau/SO2/documents/Zeos.pdf][Descripción de ZeOS]]
 + [[https://docencia.ac.upc.edu/FIB/grau/SO2/][Página web de SO2]]
+
+zeos gameplay:
+[[file:extra/scrot.png]]
