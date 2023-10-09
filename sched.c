@@ -9,12 +9,10 @@
 union task_union task[NR_TASKS]
   __attribute__((__section__(".data.task")));
 
-#if 0
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
   return list_entry( l, struct task_struct, list);
 }
-#endif
 
 extern struct list_head blocked;
 
@@ -47,10 +45,7 @@ void cpu_idle(void)
 {
 	__asm__ __volatile__("sti": : :"memory");
 
-	while(1)
-	{
-	;
-	}
+	while(1);
 }
 
 void init_idle (void)
@@ -65,7 +60,10 @@ void init_task1(void)
 
 void init_sched()
 {
-
+	for(int i=0; i<NR_TASKS; ++i) {
+		list_add_tail(&tasks[i], &freequeue);
+	}
+	INIT_LIST_HEAD(&readyqueue);
 }
 
 struct task_struct* current()

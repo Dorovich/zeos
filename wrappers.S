@@ -39,7 +39,6 @@ end_write:
 ENTRY(gettime)
         pushl %ebp
         movl %esp, %ebp
-        pushl %ebx
 
         // excepcion
         movl $10, %eax
@@ -62,7 +61,6 @@ err_gettime:
         movl %eax, errno
         movl $-1, %eax
 end_gettime:    
-        popl %ebx
         movl %ebp, %esp
         popl %ebp
         ret

@@ -120,6 +120,7 @@ void page_fault_routine_custom()
     int addr;
     char addr_buf[32];
 
+    // no se puede usas ensamblador inline, hay que hacer una funcion en asm que lo haga y llamarla desde c.
     __asm__ __volatile__ ("movl 56(%%ebp), %0" : "=r" (addr));
     itoh(addr, addr_buf);
 

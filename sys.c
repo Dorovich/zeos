@@ -43,6 +43,7 @@ void sys_exit()
 
 int sys_write(int fd, char *buffer, int size)
 {
+// Fer una copia de *buffer a una variable (es mem de usuari)
     int valido = check_fd(fd, ESCRIPTURA);
     if (valido < 0) return valido;
     if (buffer == NULL) return -1;
