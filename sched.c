@@ -14,8 +14,11 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
   return list_entry( l, struct task_struct, list);
 }
 
+struct list_head freequeue;
+struct list_head readyqueue;
 extern struct list_head blocked;
 
+struct task_struct *idle_task;
 
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry * get_DIR (struct task_struct *t) 
@@ -50,7 +53,16 @@ void cpu_idle(void)
 
 void init_idle (void)
 {
-
+	struct list_head *e = list_first(&freequeue);
+	list_del(e);
+	struct task_struct *t = list_entry(e, struct task_struct, list);
+	t->PID = 0;
+	allocate_DIR(t);
+	union task_union *u = (union task_union *)t;
+	u->stack[KERNEL_STACK_SIZE-1] = (unsigned long)cpu_idle;
+	u->stack[KERNEL_STACK_SIZE-2] = 0;
+	t->kernel_esp = u->stack[KERNEL_STACK_SIZE-2];
+	idle_task = t;
 }
 
 void init_task1(void)
@@ -61,7 +73,7 @@ void init_task1(void)
 void init_sched()
 {
 	for(int i=0; i<NR_TASKS; ++i) {
-		list_add_tail(&tasks[i], &freequeue);
+		list_add_tail(&(task[i].task.list), &freequeue);
 	}
 	INIT_LIST_HEAD(&readyqueue);
 }

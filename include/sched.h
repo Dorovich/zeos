@@ -16,7 +16,8 @@ enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
 struct task_struct {
   int PID;			/* Process ID. This MUST be the first field of the struct. */
-  list_head list;
+  struct list_head list;
+  unsigned long kernel_esp;
   page_table_entry *dir_pages_baseAddr;
 };
 
@@ -56,9 +57,5 @@ void sched_next_rr();
 void update_process_state_rr(struct task_struct *t, struct list_head *dest);
 int needs_sched_rr();
 void update_sched_data_rr();
-
-/* queues */
-struct list_head freequeue;
-struct list_head readyqueue;
 
 #endif  /* __SCHED_H__ */
