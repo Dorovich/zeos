@@ -67,6 +67,16 @@ void init_idle (void)
 
 void init_task1(void)
 {
+	struct list_head *e = list_first(&freequeue);
+	list_del(e);
+	struct task_struct *t = list_entry(e, struct task_struct, list);
+	t->PID = 1;
+	allocate_DIR(t);
+	set_user_pages(t);
+	tss.esp0 = /* TODO: system stack */
+	union task_union *u = (union task_union *)t;
+	writeMSR(0x175, &(u->stack[KERNEL_STACK_SIZE]));
+	set_cr3(t->dir_pages_baseAddr);
 }
 
 
