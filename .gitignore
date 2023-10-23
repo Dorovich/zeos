@@ -8,3 +8,4 @@ zeos.bin
 user
 *~
 build
+*.tar.gz

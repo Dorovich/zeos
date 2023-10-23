@@ -27,17 +27,25 @@ int __attribute__ ((__section__(".text.main")))
   /* t = gettime(); */
   
   char buf[256];
-  int n = 12345;
-  itoa(n, buf);
-  itoa(n, buf);
-  int len = strlen(buf);
-  write(1, buf, len);
+  /* int n = 12345; */
+  /* itoa(n, buf); */
+  /* itoa(n, buf); */
+  /* int len = strlen(buf); */
+  /* write(1, buf, len); */
   
-  int n2 = 67890;
-  itoa(n2, buf);
-  len = strlen(buf);
-  write(1, buf, len);
-  write(1, buf, len);
+  /* int n2 = 67890; */
+  /* itoa(n2, buf); */
+  /* len = strlen(buf); */
+  /* write(1, buf, len); */
+  /* write(1, buf, len); */
+
+  for(int i=0; i<10000; ++i) {
+      itoa(i, buf);
+      write(1, buf, strlen(buf));
+  }
+
+  write(-1, buf, strlen(buf));
+  perror();
   
   while(1);
 }
