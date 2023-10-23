@@ -20,6 +20,10 @@ extern struct list_head blocked;
 
 struct task_struct *idle_task;
 
+void writeMSR(int number, int value);
+unsigned int get_ebp();
+void set_esp(unsigned int new_esp);
+
 /* get_DIR - Returns the Page Directory address for task 't' */
 page_table_entry * get_DIR (struct task_struct *t) 
 {
@@ -73,9 +77,9 @@ void init_task1(void)
 	t->PID = 1;
 	allocate_DIR(t);
 	set_user_pages(t);
-	tss.esp0 = /* TODO: system stack */
 	union task_union *u = (union task_union *)t;
-	writeMSR(0x175, &(u->stack[KERNEL_STACK_SIZE]));
+	tss.esp0 = (long unsigned int)&(u->stack[KERNEL_STACK_SIZE]);
+	writeMSR(0x175, (int)&(u->stack[KERNEL_STACK_SIZE]));
 	set_cr3(t->dir_pages_baseAddr);
 }
 
@@ -99,3 +103,10 @@ struct task_struct* current()
   return (struct task_struct*)(ret_value&0xfffff000);
 }
 
+void inner_task_switch(union task_union *t) {
+	tss.esp0 = (long unsigned int)&(t->stack[KERNEL_STACK_SIZE]);
+	writeMSR(0x175, (int)&(t->stack[KERNEL_STACK_SIZE]));
+	set_cr3(t->task.dir_pages_baseAddr);
+	current()->kernel_esp = get_ebp();
+	set_esp(t->task.kernel_esp);
+}
