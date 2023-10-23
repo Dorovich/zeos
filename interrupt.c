@@ -11,6 +11,10 @@
 
 #include <libc.h>
 
+/* este include y struct externo son para llamar al task_switch desde aqui */
+#include <sched.h>
+extern struct task_struct *idle_task;
+
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 
@@ -107,6 +111,8 @@ void keyboard_routine()
         if (c != '\0') printc_xy(0, 0, c);
         else printc_xy(0, 0, 'C');
     }
+    
+    if (current()->PID == 1) task_switch((union task_union *)idle_task);
 }
 
 void clock_routine()

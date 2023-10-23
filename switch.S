@@ -31,6 +31,6 @@ ENTRY(get_ebp)
         ret
 
 ENTRY(set_esp)
-        mov 8(%esp), %esp
+        mov 4(%esp), %esp
         pop %ebp
         ret

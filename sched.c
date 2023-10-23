@@ -63,9 +63,9 @@ void init_idle (void)
 	t->PID = 0;
 	allocate_DIR(t);
 	union task_union *u = (union task_union *)t;
-	u->stack[KERNEL_STACK_SIZE-1] = (unsigned long)cpu_idle;
-	u->stack[KERNEL_STACK_SIZE-2] = 0;
-	t->kernel_esp = u->stack[KERNEL_STACK_SIZE-2];
+        u->stack[KERNEL_STACK_SIZE-2] = 0; // ebp
+	u->stack[KERNEL_STACK_SIZE-1] = (unsigned long)cpu_idle; // @ret
+	t->kernel_esp = &(u->stack[KERNEL_STACK_SIZE-2]);
 	idle_task = t;
 }
 
@@ -86,6 +86,7 @@ void init_task1(void)
 
 void init_sched()
 {
+        INIT_LIST_HEAD(&freequeue);
 	for(int i=0; i<NR_TASKS; ++i) {
 		list_add_tail(&(task[i].task.list), &freequeue);
 	}
