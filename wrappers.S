@@ -50,7 +50,7 @@ ENTRY(gettime)
 	sysenter
 cont_gettime:
 	pop %ebp
-	addl $4, %ebp
+	addl $4, %esp
 	pop %edx
 	pop %ecx
 
@@ -60,7 +60,36 @@ err_gettime:
         neg %eax
         movl %eax, errno
         movl $-1, %eax
-end_gettime:    
+end_gettime:
+        movl %ebp, %esp
+        popl %ebp
+        ret
+
+ENTRY(getpid)
+        pushl %ebp
+        movl %esp, %ebp
+
+        // excepcion
+        movl $20, %eax
+	push %ecx
+	push %edx
+	push $cont_getpid
+	push %ebp
+	mov %esp, %ebp
+	sysenter
+cont_getpid:
+	pop %ebp
+	addl $4, %esp
+	pop %edx
+	pop %ecx
+
+        cmpl $0, %eax
+        jge end_getpid
+err_getpid:
+        neg %eax
+        movl %eax, errno
+        movl $-1, %eax
+end_getpid:    
         movl %ebp, %esp
         popl %ebp
         ret
