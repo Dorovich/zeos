@@ -33,6 +33,11 @@ int sys_fork()
   int PID=-1;
 
   // creates the child process
+
+  struct list_head *e = list_first(&freequeue);
+  if (list_empty(e)) return -1;
+  list_del(e);
+  struct task_struct *t = list_entry(e, struct task_struct, list);
   
   return PID;
 }

@@ -93,3 +93,34 @@ end_getpid:
         movl %ebp, %esp
         popl %ebp
         ret
+
+        
+ENTRY(fork)
+        pushl %ebp
+        movl %esp, %ebp
+
+        // excepcion
+        movl $2, %eax
+	push %ecx
+	push %edx
+	push $cont_fork
+	push %ebp
+	mov %esp, %ebp
+	sysenter
+cont_fork:
+	pop %ebp
+	addl $4, %esp
+	pop %edx
+	pop %ecx
+
+        cmpl $0, %eax
+        jge end_fork
+err_fork:
+        neg %eax
+        movl %eax, errno
+        movl $-1, %eax
+end_fork:    
+        movl %ebp, %esp
+        popl %ebp
+        ret
+
