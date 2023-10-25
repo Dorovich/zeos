@@ -20,6 +20,8 @@ extern struct list_head blocked;
 
 struct task_struct *idle_task;
 
+unsigned char pid_list[NR_PIDS];
+
 void writeMSR(int number, int value);
 unsigned int get_ebp();
 void set_esp(unsigned int new_esp);
@@ -61,6 +63,7 @@ void init_idle (void)
 	list_del(e);
 	struct task_struct *t = list_entry(e, struct task_struct, list);
 	t->PID = 0;
+        pid_list[t->PID] = 1;
 	allocate_DIR(t);
 	union task_union *u = (union task_union *)t;
         u->stack[KERNEL_STACK_SIZE-2] = 0; // ebp
@@ -75,6 +78,7 @@ void init_task1(void)
 	list_del(e);
 	struct task_struct *t = list_entry(e, struct task_struct, list);
 	t->PID = 1;
+        pid_list[t->PID] = 1;
 	allocate_DIR(t);
 	set_user_pages(t);
 	union task_union *u = (union task_union *)t;

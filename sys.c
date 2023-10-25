@@ -11,6 +11,9 @@
 #define LECTURA 0
 #define ESCRIPTURA 1
 
+extern struct list_head freequeue;
+extern unsigned char pid_list[NR_PIDS];
+
 int check_fd(int fd, int permissions)
 {
   if (fd!=1) return -9; /*EBADF*/
@@ -38,7 +41,61 @@ int sys_fork()
   if (list_empty(e)) return -1;
   list_del(e);
   struct task_struct *t = list_entry(e, struct task_struct, list);
+
+  copy_data(current(), t, sizeof(union task_union));
+  allocate_DIR(t);
+
+  page_table_entry *child_PT = get_PT(t), *parent_PT = get_PT(current());
+  int new_frame, pag;
+
+  for (pag=0; pag<NUM_PAG_KERNEL; pag++) {
+      child_PT[(KERNEL_START>>12)+pag] = parent_PT[(KERNEL_START>>12)+pag];
+  }
   
+  for (pag=0; pag<NUM_PAG_CODE; pag++) {
+      child_PT[PAG_LOG_INIT_CODE+pag] = parent_PT[PAG_LOG_INIT_CODE+pag];      
+  }
+
+  // buscar entrada libre de la TP
+  int temp_entry=-1;
+  pag=TOTAL_PAGES;
+  while (pag>(KERNEL_START>>12)+NUM_PAG_KERNEL && temp_entry<0) {
+      if (child_PT[pag].entry == 0) temp_entry = pag;
+      --pag;
+  }
+  if (temp_entry<0) return -1;
+
+  // alojar paginas de datos para el hijo y copiar los del padre
+  for (pag=0; pag<NUM_PAG_DATA; pag++) {
+      new_frame = alloc_frame();
+      if (new_frame < 0) return -1;
+      
+      set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
+      set_ss_pag(parent_PT, temp_entry, new_frame);
+
+      void *parent_page = (void *)((PAG_LOG_INIT_DATA+pag)<<12);
+      void *child_page = (void *)(temp_entry<<12);
+      copy_data(parent_page, child_page, PAGE_SIZE);
+  }
+
+  del_ss_pag(parent_PT, temp_entry);
+  set_cr3(parent_PT);
+
+  // asignar un PID al proceso
+  int new_pid;
+  do {
+      new_pid = (gettime()+gettime())%NR_PIDS;
+  } while (pid_list[new_pid]);
+  t->PID = new_pid;
+
+  // cambiar campos del task_struct del hijo no comunes con el padre
+  t->kernel_esp = NULL;
+  t->list = NULL;
+  
+  // preparar la pila del hijo
+
+  // insertar hijo en readyqueue
+
   return PID;
 }
 
