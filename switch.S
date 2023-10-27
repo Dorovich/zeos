@@ -24,7 +24,7 @@ ENTRY(get_ebp)
         push %ebp
         mov %esp, %ebp
         
-        mov %ebp, %eax
+        mov (%ebp), %eax
         
         mov %ebp, %esp
         pop %ebp

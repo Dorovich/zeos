@@ -12,6 +12,7 @@
 #define ESCRIPTURA 1
 
 extern struct list_head freequeue;
+extern struct list_head readyqueue;
 extern unsigned char pid_list[NR_PIDS];
 
 int check_fd(int fd, int permissions)
@@ -84,19 +85,24 @@ int sys_fork()
   // asignar un PID al proceso
   int new_pid;
   do {
-      new_pid = (gettime()+gettime())%NR_PIDS;
-  } while (pid_list[new_pid]);
+      new_pid = (zeos_ticks+zeos_ticks)%NR_PIDS;
+  } while (pid_list[new_pid] == 1);
   t->PID = new_pid;
 
   // cambiar campos del task_struct del hijo no comunes con el padre
   t->kernel_esp = NULL;
-  t->list = NULL;
   
   // preparar la pila del hijo
-
+  union task_union *u = (union task_union *)&t;
+  unsigned int pos = KERNEL_STACK_SIZE-1 - (5+11+1); /* ctx HW + ctx SW + @ret al handler*/
+  u->stack[pos-1] = 0; // ebp
+  u->stack[pos] = (unsigned long)&ret_from_fork; // @ret
+  t->kernel_esp = (int)&(u->stack[pos-1]);
+    
   // insertar hijo en readyqueue
+  list_add_tail(&(t->list), &readyqueue);
 
-  return PID;
+  return new_pid;
 }
 
 void sys_exit()

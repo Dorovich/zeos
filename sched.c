@@ -115,3 +115,39 @@ void inner_task_switch(union task_union *t) {
 	current()->kernel_esp = get_ebp();
 	set_esp(t->task.kernel_esp);
 }
+
+int ret_from_fork() {
+    return 0;
+}
+
+void update_sched_data_rr (void) {
+    // cositas
+}
+
+int needs_sched_rr (void) {
+    // cositas
+}
+
+void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue) {
+    // cositas
+}
+
+void sched_next_rr (void) {
+    // cositas
+}
+
+void schedule (void) {
+    update_sched_data_rr();
+    if (needs_sched_rr()) {
+        update_process_state_rr(current(), &readyqueue);
+        sched_next_rr();
+    }
+}
+
+int get_quantum (struct task_struct *t) {
+    // cositas
+}
+
+int set_quantum (struct task_struct *t, int new_quantum) {
+    // cositas
+}

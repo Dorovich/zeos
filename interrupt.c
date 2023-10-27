@@ -19,6 +19,7 @@ Gate idt[IDT_ENTRIES];
 Register    idtR;
 
 void writeMSR(int number, int value);
+int get_fault_eip();
 
 char char_map[] =
 {
@@ -110,24 +111,26 @@ void keyboard_routine()
         unsigned char c = char_map[data & 0x7F];
         if (c != '\0') printc_xy(0, 0, c);
         else printc_xy(0, 0, 'C');
+
+        if (c == 's') {
+            if (current()->PID == 0) task_switch(&task[1]);
+            else if (current()->PID == 1) task_switch(&task[0]);           
+        }
     }
-    
-    if (current()->PID == 1) task_switch((union task_union *)idle_task);
 }
 
 void clock_routine()
 {
     ++zeos_ticks;
     zeos_show_clock();
+    schedule();
 }
 
 void page_fault_routine_custom()
 {
-    int addr;
     char addr_buf[32];
-
-    // no se puede usas ensamblador inline, hay que hacer una funcion en asm que lo haga y llamarla desde c.
-    __asm__ __volatile__ ("movl 56(%%ebp), %0" : "=r" (addr));
+    int addr = get_fault_eip();
+    //__asm__ __volatile__ ("movl 56(%%ebp), %0" : "=r" (addr));
     itoh(addr, addr_buf);
 
     printk("Process generates a PAGE FAULT exception at EIP: ");
