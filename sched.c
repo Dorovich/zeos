@@ -11,7 +11,7 @@ union task_union task[NR_TASKS]
 
 struct task_struct *list_head_to_task_struct(struct list_head *l)
 {
-  return list_entry( l, struct task_struct, list);
+  return list_entry(l, struct task_struct, list);
 }
 
 struct list_head freequeue;
@@ -112,6 +112,7 @@ void inner_task_switch(union task_union *t) {
 	tss.esp0 = (long unsigned int)&(t->stack[KERNEL_STACK_SIZE]);
 	writeMSR(0x175, (int)&(t->stack[KERNEL_STACK_SIZE]));
 	set_cr3(t->task.dir_pages_baseAddr);
+        quantum = get_quantum(t->task);
 	current()->kernel_esp = get_ebp();
 	set_esp(t->task.kernel_esp);
 }
@@ -121,33 +122,43 @@ int ret_from_fork() {
 }
 
 void update_sched_data_rr (void) {
-    // cositas
+    --quantum;
 }
 
 int needs_sched_rr (void) {
-    // cositas
+    if (quantum == 0) return 1;
+    return 0;
 }
 
 void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue) {
-    // cositas
+    if (current() != t) list_del(t->list);
+    if (dst_queue != NULL) list_add_tail(&(t->list), dst_queue);
 }
 
 void sched_next_rr (void) {
-    // cositas
+    if (list_empty(&readyqueue)) {
+        task_switch(idle_task);
+    } else {
+        struct list_head *e = list_first(&readyqueue);
+        list_del(e);
+        struct task_struct *t = list_entry(e, struct task_struct, list);
+        task_switch(t);
+    }
 }
 
 void schedule (void) {
     update_sched_data_rr();
     if (needs_sched_rr()) {
-        update_process_state_rr(current(), &readyqueue);
+        if (current() != idle_task)
+            update_process_state_rr(current(), &readyqueue);
         sched_next_rr();
     }
 }
 
 int get_quantum (struct task_struct *t) {
-    // cositas
+    return t->quantum;
 }
 
-int set_quantum (struct task_struct *t, int new_quantum) {
-    // cositas
+void set_quantum (struct task_struct *t, int new_quantum) {
+    t->quantum = new_quantum;
 }
