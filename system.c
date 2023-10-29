@@ -72,7 +72,7 @@ int __attribute__((__section__(".text.main")))
 
   /*** DO *NOT* ADD ANY CODE IN THIS ROUTINE BEFORE THIS POINT ***/
 
-  printk("Kernel Loaded!    ");
+  printk("Kernel cargado.    ");
 
 
   /* Initialize hardware data */
@@ -97,7 +97,7 @@ int __attribute__((__section__(".text.main")))
   /* Move user code/data now (after the page table initialization) */
   copy_data((void *) KERNEL_START + *p_sys_size, (void*)L_USER_START, *p_usr_size);
 
-  printk("Entering user mode...");
+  printk("Entrando a modo usuario...");
 
   zeos_ticks = 0;
   enable_int();
