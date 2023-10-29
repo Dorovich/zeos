@@ -72,9 +72,9 @@
 
 ENTRY(keyboard_handler)
 	SAVE_ALL
-	EOI
 	call keyboard_routine
 	RESTORE_ALL
+     	EOI
 	iret
 
 ENTRY(clock_handler)

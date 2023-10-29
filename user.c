@@ -33,7 +33,7 @@ int __attribute__ ((__section__(".text.main")))
   /* itoa(written, buf); */
   /* write(1, buf, strlen(buf)); */
 
-  /* write(-1, buf, strlen(buf)); */
+  write(-1, buf, strlen(buf));
   /* perror(); */
   
   /* buf[0] = 'A'; */

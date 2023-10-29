@@ -77,6 +77,8 @@ int sys_fork()
       void *parent_page = (void *)((PAG_LOG_INIT_DATA+pag)<<12);
       void *child_page = (void *)(temp_entry<<12);
       copy_data(parent_page, child_page, PAGE_SIZE);
+      
+      set_cr3(current()->dir_pages_baseAddr); // flush TLB
   }
 
   del_ss_pag(parent_PT, temp_entry);
@@ -85,15 +87,15 @@ int sys_fork()
   // cambiar campos del task_struct del hijo no comunes con el padre
   
   // asignar un PID al proceso
-  int new_pid;
-  do {
-      new_pid = (zeos_ticks+zeos_ticks)%NR_PIDS;
-  } while (pid_list[new_pid] == 1);
+  int new_pid = 69;
+  /* do { */
+  /*     new_pid = (zeos_ticks+zeos_ticks)%NR_PIDS; */
+  /* } while (pid_list[new_pid] == 1); */
   t->PID = new_pid;
   pid_list[new_pid] = 1;
   
   // preparar la pila del hijo
-  union task_union *u = (union task_union *)&t;
+  union task_union *u = (union task_union *)t;
   // unsigned int pos = KERNEL_STACK_SIZE-1 - (5+11+1); /* ctx HW + ctx SW + @ret al handler */
   //int pos = KERNEL_STACK_SIZE-18; /* ctx HW + ctx SW + @ret al handler = 17 */
   int offset = 18; //17?
