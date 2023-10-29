@@ -101,11 +101,11 @@ int sys_fork()
   int offset = 18; //17?
   u->stack[KERNEL_STACK_SIZE-offset-1] = 0; // ebp
   u->stack[KERNEL_STACK_SIZE-offset] = (unsigned long)ret_from_fork; // @ret
-  t->kernel_esp = (unsigned long int)&(u->stack[KERNEL_STACK_SIZE-offset-1]);
+  t->kernel_esp = (unsigned long int)&u->stack[KERNEL_STACK_SIZE-offset-1];
     
   // insertar hijo en readyqueue
-  list_add_tail(&(t->list), &readyqueue);
-  
+  list_add_tail(&t->list, &readyqueue);
+    
   return new_pid;
 }
 
