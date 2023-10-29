@@ -87,10 +87,10 @@ int sys_fork()
   // cambiar campos del task_struct del hijo no comunes con el padre
   
   // asignar un PID al proceso
-  int new_pid = 69;
-  /* do { */
-  /*     new_pid = (zeos_ticks+zeos_ticks)%NR_PIDS; */
-  /* } while (pid_list[new_pid] == 1); */
+  int new_pid;
+  do {
+      new_pid = (zeos_ticks+zeos_ticks+zeos_ticks)%NR_PIDS;
+  } while (pid_list[new_pid] == 1);
   t->PID = new_pid;
   pid_list[new_pid] = 1;
   
