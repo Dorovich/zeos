@@ -36,15 +36,16 @@ int __attribute__ ((__section__(".text.main")))
   /* write(-1, buf, strlen(buf)); */
   /* perror(); */
   
-  buf[0] = 'A';
-  buf[1] = ' ';
-  buf[2] = '\0';
-  
-  /* itoa(getpid(), buf); */
-  /* write(1, buf, strlen(buf)); */
-  
+  /* buf[0] = 'A'; */
+  /* buf[1] = ' '; */
+  /* buf[2] = '\0'; */
+
+  int pid = fork();  
+  itoa(pid, buf);
+    
   while(1) {
-      for (unsigned int i=0; i<100000; ++i);
+      for (unsigned int i=0; i<500000; ++i);
+      /* write(1, buf, strlen(buf)); */
       write(1, buf, strlen(buf));
   }
 }

@@ -22,6 +22,8 @@ struct task_struct *idle_task;
 
 unsigned char pid_list[NR_PIDS];
 
+int quantum;
+
 void writeMSR(int number, int value);
 unsigned int get_ebp();
 void set_esp(unsigned int new_esp);
@@ -64,11 +66,13 @@ void init_idle (void)
 	struct task_struct *t = list_entry(e, struct task_struct, list);
 	t->PID = 0;
         pid_list[t->PID] = 1;
+        t->quantum = 100;
 	allocate_DIR(t);
+        
 	union task_union *u = (union task_union *)t;
         u->stack[KERNEL_STACK_SIZE-2] = 0; // ebp
 	u->stack[KERNEL_STACK_SIZE-1] = (unsigned long)cpu_idle; // @ret
-	t->kernel_esp = &(u->stack[KERNEL_STACK_SIZE-2]);
+	t->kernel_esp = (long unsigned int)&(u->stack[KERNEL_STACK_SIZE-2]);
 	idle_task = t;
 }
 
@@ -79,8 +83,11 @@ void init_task1(void)
 	struct task_struct *t = list_entry(e, struct task_struct, list);
 	t->PID = 1;
         pid_list[t->PID] = 1;
+        t->quantum = 100;
+        quantum = t->quantum;
 	allocate_DIR(t);
 	set_user_pages(t);
+        
 	union task_union *u = (union task_union *)t;
 	tss.esp0 = (long unsigned int)&(u->stack[KERNEL_STACK_SIZE]);
 	writeMSR(0x175, (int)&(u->stack[KERNEL_STACK_SIZE]));
@@ -112,7 +119,7 @@ void inner_task_switch(union task_union *t) {
 	tss.esp0 = (long unsigned int)&(t->stack[KERNEL_STACK_SIZE]);
 	writeMSR(0x175, (int)&(t->stack[KERNEL_STACK_SIZE]));
 	set_cr3(t->task.dir_pages_baseAddr);
-        quantum = get_quantum(t->task);
+        quantum = get_quantum(&(t->task));
 	current()->kernel_esp = get_ebp();
 	set_esp(t->task.kernel_esp);
 }
@@ -131,24 +138,31 @@ int needs_sched_rr (void) {
 }
 
 void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue) {
-    if (current() != t) list_del(t->list);
+    if (current() != t) list_del(&(t->list));
     if (dst_queue != NULL) list_add_tail(&(t->list), dst_queue);
 }
 
 void sched_next_rr (void) {
     if (list_empty(&readyqueue)) {
-        task_switch(idle_task);
+        printk("CAMBIANDO A IDLE. ");
+        task_switch((union task_union *)idle_task);
     } else {
         struct list_head *e = list_first(&readyqueue);
         list_del(e);
         struct task_struct *t = list_entry(e, struct task_struct, list);
-        task_switch(t);
+        printk("CAMBIANDO A PID ");
+        char pid[6];
+        itoa(t->PID, pid);
+        printk(pid);
+        printk(". ");
+        task_switch((union task_union *)t);
     }
 }
 
 void schedule (void) {
     update_sched_data_rr();
     if (needs_sched_rr()) {
+        printk("TOCA CAMBIO DE PROCESO... ");
         if (current() != idle_task)
             update_process_state_rr(current(), &readyqueue);
         sched_next_rr();

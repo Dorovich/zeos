@@ -112,10 +112,7 @@ void keyboard_routine()
         if (c != '\0') printc_xy(0, 0, c);
         else printc_xy(0, 0, 'C');
 
-        if (c == 's') {
-            if (current()->PID == 0) task_switch(&task[1]);
-            else if (current()->PID == 1) task_switch(&task[0]);           
-        }
+        /* if (c == 's') schedule(); */
     }
 }
 
