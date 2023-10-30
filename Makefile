@@ -38,6 +38,7 @@ SYSOBJ = \
 	pagefault.o \
 	switch.o \
 	shared.o \
+	stats.o \
 
 LIBZEOS = -L . -l zeos
 
@@ -73,7 +74,7 @@ entry.s: entry.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 
 suma.s: suma.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
-	
+
 pagefault.s: pagefault.S $(INCLUDEDIR)/asm.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
@@ -103,6 +104,8 @@ libc.o:libc.c $(INCLUDEDIR)/libc.h
 shared.o:shared.c $(INCLUDEDIR)/shared.h
 
 mm.o:mm.c $(INCLUDEDIR)/types.h $(INCLUDEDIR)/mm.h
+
+stats.o:stats.c $(INCLUDEDIR)/stats.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/utils.h 
 
 sys.o:sys.c $(INCLUDEDIR)/devices.h
 

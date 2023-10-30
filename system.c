@@ -60,7 +60,6 @@ inline void set_seg_regs(Word data_sel, Word stack_sel, DWord esp)
 int __attribute__((__section__(".text.main")))
   main(void)
 {
-
   set_eflags();
 
   /* Define the kernel segment registers  and a stack to execute the 'main' code */
@@ -101,6 +100,9 @@ int __attribute__((__section__(".text.main")))
 
   zeos_ticks = 0;
   enable_int();
+
+  current()->stats.elapsed_total_ticks = get_ticks();
+  
   /*
    * We return from a 'theorical' call to a 'call gate' to reduce our privileges
    * and going to execute 'magically' at 'usr_main'...

@@ -145,3 +145,35 @@ end_exit:
         popl %ebp
         ret
 
+ENTRY(get_stats)
+        pushl %ebp
+        movl %esp, %ebp
+
+        // paso de parametros
+        movl 8(%ebp), %edx
+        movl 12(%ebp), %ecx
+
+        // excepcion
+        movl $35, %eax
+	push %ecx
+	push %edx
+	push $cont_get_stats
+	push %ebp
+	mov %esp, %ebp
+	sysenter
+cont_get_stats:
+	pop %ebp
+	addl $4, %esp
+	pop %edx
+	pop %ecx
+
+        cmpl $0, %eax
+        jge end_get_stats
+err_get_stats:
+        neg %eax
+        movl %eax, errno
+        movl $-1, %eax
+end_get_stats:
+        movl %ebp, %esp
+        popl %ebp
+        ret

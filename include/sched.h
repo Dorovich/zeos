@@ -8,6 +8,7 @@
 #include <list.h>
 #include <types.h>
 #include <mm_address.h>
+#include <stats.h>
 
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
@@ -22,6 +23,7 @@ struct task_struct {
     unsigned long kernel_esp;
     page_table_entry *dir_pages_baseAddr;
     int quantum;
+    struct stats stats;
 };
 
 union task_union {
@@ -59,6 +61,8 @@ page_table_entry *get_PT (struct task_struct *t) ;
 page_table_entry *get_DIR (struct task_struct *t) ;
 
 int ret_from_fork ();
+
+struct task_struct* get_process_by_pid (int pid);
 
 /* Headers for the scheduling policy */
 void sched_next_rr();

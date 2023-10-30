@@ -5,6 +5,7 @@
 #include <sched.h>
 #include <mm.h>
 #include <io.h>
+#include <stats.h>
 
 union task_union task[NR_TASKS]
 __attribute__((__section__(".data.task")));
@@ -66,6 +67,7 @@ void init_idle (void)
     struct task_struct *t = list_entry(e, struct task_struct, list);
     t->PID = 0;
     pid_list[t->PID] = 1;
+    INIT_STATS(t->stats);
     INIT_LIST_HEAD(&t->list);
     set_quantum(t, 100);
     quantum = t->quantum;
@@ -85,6 +87,7 @@ void init_task1(void)
     struct task_struct *t = list_entry(e, struct task_struct, list);
     t->PID = 1;
     pid_list[t->PID] = 1;
+    INIT_STATS(t->stats);
     INIT_LIST_HEAD(&t->list);
     set_quantum(t, 100);
     quantum = t->quantum;
@@ -125,10 +128,24 @@ void inner_task_switch(union task_union *t) {
     quantum = get_quantum(&t->task);
     current()->kernel_esp = get_ebp();
     set_esp(t->task.kernel_esp);
+    update_ready_to_system_ticks();
 }
 
 int ret_from_fork() {
+    update_system_to_user_ticks();
     return 0;
+}
+
+struct task_struct* get_process_by_pid (int pid) {
+    if (pid_list[pid] == 0) return NULL; // no existe el proceso con PID = pid
+    if (current()->PID == pid) return current();
+
+    struct list_head *l;
+    list_for_each(l, &readyqueue) {
+        struct task_struct *t = list_entry(l, struct task_struct, list);
+        if (t->PID == pid) return t;
+    }
+    return NULL;
 }
 
 void update_sched_data_rr (void) {
@@ -147,19 +164,20 @@ void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue
 
 void sched_next_rr (void) {
     if (list_empty(&readyqueue)) {
-        printk("CAMBIANDO A IDLE. ");
+        /* printk("CAMBIANDO A IDLE. "); */
         task_switch((union task_union *)idle_task);
     } else {
         struct list_head *e = list_first(&readyqueue);
         list_del(e);
         struct task_struct *t = list_entry(e, struct task_struct, list);
         
-        printk("CAMBIANDO A PID ");
-        char pid[8];
-        itoa(t->PID, pid);
-        printk(pid);
-        printk(". ");
-        
+        /* printk("CAMBIANDO A PID "); */
+        /* char pid[8]; */
+        /* itoa(t->PID, pid); */
+        /* printk(pid); */
+        /* printk(". "); */
+
+        update_system_to_ready_ticks();
         task_switch((union task_union *)t);
     }
 }
@@ -167,9 +185,8 @@ void sched_next_rr (void) {
 void schedule (void) {
     update_sched_data_rr();
     if (needs_sched_rr()) {
-        printk("TOCA CAMBIO DE PROCESO... ");
-        if (current() != idle_task)
-            update_process_state_rr(current(), &readyqueue);
+        /* printk("TOCA CAMBIO DE PROCESO... "); */
+        if (current() != idle_task) update_process_state_rr(current(), &readyqueue);
         sched_next_rr();
     }
 }
