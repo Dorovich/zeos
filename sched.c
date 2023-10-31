@@ -67,7 +67,7 @@ void init_idle (void)
     struct task_struct *t = list_entry(e, struct task_struct, list);
     t->PID = 0;
     pid_list[t->PID] = 1;
-    INIT_STATS(t->stats);
+    INIT_STATS(&t->stats);
     INIT_LIST_HEAD(&t->list);
     set_quantum(t, 100);
     quantum = t->quantum;
@@ -87,7 +87,7 @@ void init_task1(void)
     struct task_struct *t = list_entry(e, struct task_struct, list);
     t->PID = 1;
     pid_list[t->PID] = 1;
-    INIT_STATS(t->stats);
+    INIT_STATS(&t->stats);
     INIT_LIST_HEAD(&t->list);
     set_quantum(t, 100);
     quantum = t->quantum;

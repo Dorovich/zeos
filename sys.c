@@ -12,6 +12,8 @@
 #define LECTURA 0
 #define ESCRIPTURA 1
 
+#define WRITE_MAX 256
+
 extern struct list_head freequeue;
 extern struct list_head readyqueue;
 extern unsigned char pid_list[NR_PIDS];
@@ -102,7 +104,7 @@ int sys_fork()
     pid_list[new_pid] = 1;
 
     // inicializar sus stats a cero
-    INIT_STATS(t->stats);
+    INIT_STATS(&t->stats);
   
     // preparar la pila del hijo
     union task_union *u = (union task_union *)t;
@@ -148,16 +150,34 @@ int sys_write(int fd, char *buffer, int size)
 {
     update_user_to_system_ticks();
     
-    // Fer una copia de *buffer a una variable (es mem de usuari)
+    // comprovaciones
     int valido = check_fd(fd, ESCRIPTURA);
     if (valido < 0) return valido;
     if (buffer == NULL) return -1;
     if (size < 0) return -1;
 
-    if (fd == 1) return sys_write_console(buffer, size);
+    // copiar datos del usuario y escribir
+    char sys_buffer[WRITE_MAX];
+    int s = 0, written = 0, returned, to_write;
+    while (s < size) {
+        if (size-s <= WRITE_MAX) to_write = size-s;
+        else to_write = WRITE_MAX;
+        
+        copy_data(&buffer[s], sys_buffer, to_write);
+        s += to_write;
+        
+        switch (fd) {
+        case 1:
+            returned = sys_write_console(sys_buffer, to_write);
+            break;
+        }
+
+        if (returned < 0) return returned;
+        else written += returned;
+    }
 
     update_system_to_user_ticks();
-    return 0;
+    return written;
 }
 
 int sys_gettime()
