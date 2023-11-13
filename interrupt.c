@@ -111,8 +111,6 @@ void keyboard_routine()
         unsigned char c = char_map[data & 0x7F];
         if (c != '\0') printc_xy(0, 0, c);
         else printc_xy(0, 0, 'C');
-
-        /* if (c == 's') schedule(); */
     }
 }
 
