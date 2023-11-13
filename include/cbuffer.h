@@ -4,9 +4,16 @@
 #define CBUFFER_SIZE 10
 
 struct cbuffer {
-		char buffer[CBUFFER_SIZE];
-		int head, tail;
+    char buffer[CBUFFER_SIZE];
+    int head, tail;
 }
+
+// -----------------------------
+// |   | A | Z | F |   |   |   |
+// -----------------------------
+//     ^head       ^tail
+
+void cbuffer_init (struct cbuffer *b);
 
 char cbuffer_pop (struct cbuffer *b);
 
