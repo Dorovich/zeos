@@ -128,11 +128,9 @@ void inner_task_switch(union task_union *t) {
     quantum = get_quantum(&t->task);
     current()->kernel_esp = get_ebp();
     set_esp(t->task.kernel_esp);
-    update_ready_to_system_ticks();
 }
 
 int ret_from_fork() {
-    update_system_to_user_ticks();
     return 0;
 }
 
@@ -177,7 +175,6 @@ void sched_next_rr (void) {
         /* printk(pid); */
         /* printk(". "); */
 
-        update_system_to_ready_ticks();
         task_switch((union task_union *)t);
     }
 }

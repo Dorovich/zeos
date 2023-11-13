@@ -106,8 +106,6 @@ void setIdt()
 
 void keyboard_routine()
 {
-    update_user_to_system_ticks();
-    
     unsigned char data = inb(0x60);
     if ((data & 0x80) == 0) {
         unsigned char c = char_map[data & 0x7F];
@@ -116,25 +114,17 @@ void keyboard_routine()
 
         /* if (c == 's') schedule(); */
     }
-    
-    update_system_to_user_ticks();
 }
 
 void clock_routine()
 {
-    update_user_to_system_ticks();
-    
     ++zeos_ticks;
     zeos_show_clock();
     schedule();
-    
-    update_system_to_user_ticks();
 }
 
 void page_fault_routine_custom()
 {
-    update_user_to_system_ticks();
-    
     char addr_buf[32];
     int addr = get_fault_eip();
     //__asm__ __volatile__ ("movl 56(%%ebp), %0" : "=r" (addr));
