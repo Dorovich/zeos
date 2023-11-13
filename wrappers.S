@@ -177,3 +177,37 @@ end_get_stats:
         movl %ebp, %esp
         popl %ebp
         ret
+
+
+ENTRY(waitKey)
+        pushl %ebp
+        movl %esp, %ebp
+
+        // paso de parametros
+        movl 8(%ebp), %edx
+        movl 12(%ebp), %ecx
+
+        // excepcion
+        movl $11, %eax
+	push %ecx
+	push %edx
+	push $cont_waitKey
+	push %ebp
+	mov %esp, %ebp
+	sysenter
+cont_waitKey:
+	pop %ebp
+	addl $4, %esp
+	pop %edx
+	pop %ecx
+
+        cmpl $0, %eax
+        jge end_waitKey
+err_waitKey:
+        neg %eax
+        movl %eax, errno
+        movl $-1, %eax
+end_waitKey:    
+        movl %ebp, %esp
+        popl %ebp
+        ret
