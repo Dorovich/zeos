@@ -24,6 +24,14 @@ struct task_struct {
     page_table_entry *dir_pages_baseAddr;
     int quantum;
     struct stats stats;
+    // parent hierarchy
+    struct task_struct *parent;
+    /*
+    struct list_head *parent_head;
+    struct list_head *parent_node;
+    */
+    // blocked queue
+    struct list_head *blocked;
 };
 
 union task_union {
