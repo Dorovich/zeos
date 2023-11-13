@@ -174,3 +174,18 @@ int sys_get_stats (int pid, struct stats *st)
     
     return 0;
 }
+
+int sys_waitKey(char* b, int timeout) {
+	// si hay algo en el buffer
+	// b = buffer[head];
+	//
+	// si no
+	// bloqueao
+	// cuenta regresiva
+	// check si hay algo en el buffer
+	//
+	// acaba cuenta regresiva
+	// return -1
+	
+	
+}
