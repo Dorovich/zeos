@@ -9,6 +9,8 @@
 
 #include <zeos_interrupt.h>
 
+#include <cbuffer.h>
+
 #include <libc.h>
 
 /* este include y struct externo son para llamar al task_switch desde aqui */
@@ -20,6 +22,8 @@ Register    idtR;
 
 void writeMSR(int number, int value);
 int get_fault_eip();
+
+struct cbuffer keyboard_buffer;
 
 char char_map[] =
 {
@@ -108,9 +112,9 @@ void keyboard_routine()
 {
     unsigned char data = inb(0x60);
     if ((data & 0x80) == 0) {
-        unsigned char c = char_map[data & 0x7F];
-        if (c != '\0') printc_xy(0, 0, c);
-        else printc_xy(0, 0, 'C');
+			/* INICIALIZAR EL keyboard_buffer EN ALGUN LADO !!! */
+		if (!cbuffer_full(&keyboard_buffer))
+				cbuffer_push(&keyboard_buffer, char_map[data & 0x7F]);
     }
 }
 
