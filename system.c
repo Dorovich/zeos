@@ -99,6 +99,7 @@ int __attribute__((__section__(".text.main")))
   printk("Entrando a modo usuario...");
 
   zeos_ticks = 0;
+  cbuffer_init(&keyboard_buffer);
   enable_int();
 
   current()->stats.elapsed_total_ticks = get_ticks();

@@ -112,7 +112,6 @@ void keyboard_routine()
 {
     unsigned char data = inb(0x60);
     if ((data & 0x80) == 0) {
-			/* INICIALIZAR EL keyboard_buffer EN ALGUN LADO !!! */
 		if (!cbuffer_full(&keyboard_buffer))
 				cbuffer_push(&keyboard_buffer, char_map[data & 0x7F]);
     }
