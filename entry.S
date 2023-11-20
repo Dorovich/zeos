@@ -71,21 +71,21 @@
 /* interruptions */
 
 ENTRY(keyboard_handler)
-	call update_user_to_system_ticks
 	SAVE_ALL
-	call keyboard_routine
-	RESTORE_ALL
+	call update_user_to_system_ticks
      	EOI
+	call keyboard_routine
 	call update_system_to_user_ticks
+	RESTORE_ALL
 	iret
 
 ENTRY(clock_handler)
-	call update_user_to_system_ticks
 	SAVE_ALL
+	call update_user_to_system_ticks
 	EOI
 	call clock_routine
-	RESTORE_ALL
 	call update_system_to_user_ticks
+	RESTORE_ALL
 	iret
 
 /* exceptions */

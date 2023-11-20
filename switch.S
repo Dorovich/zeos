@@ -21,13 +21,7 @@ ENTRY(task_switch)
         ret
         
 ENTRY(get_ebp)
-        push %ebp
-        mov %esp, %ebp
-        
-        mov (%ebp), %eax
-        
-        mov %ebp, %esp
-        pop %ebp
+        mov %ebp, %eax
         ret
 
 ENTRY(set_esp)
