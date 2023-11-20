@@ -6,6 +6,7 @@
 #include <mm.h>
 #include <io.h>
 #include <stats.h>
+#include <devices.h>
 
 union task_union task[NR_TASKS]
 __attribute__((__section__(".data.task")));
@@ -17,7 +18,6 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 
 struct list_head freequeue;
 struct list_head readyqueue;
-extern struct list_head blocked;
 
 struct task_struct *idle_task;
 

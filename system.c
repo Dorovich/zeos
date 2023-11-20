@@ -13,6 +13,8 @@
 #include <utils.h>
 #include <zeos_mm.h> /* TO BE DELETED WHEN ADDED THE PROCESS MANAGEMENT CODE TO BECOME MULTIPROCESS */
 
+#include <devices.h>
+#include <cbuffer.h>
 
 int (*usr_main)(void) = (void *) (PAG_LOG_INIT_CODE*PAGE_SIZE);
 unsigned int *p_sys_size = (unsigned int *) KERNEL_START;
@@ -100,6 +102,7 @@ int __attribute__((__section__(".text.main")))
 
   zeos_ticks = 0;
   cbuffer_init(&keyboard_buffer);
+  INIT_LIST_HEAD(&blocked);
   enable_int();
 
   current()->stats.elapsed_total_ticks = get_ticks();
