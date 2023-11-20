@@ -10,6 +10,7 @@
 #include <zeos_interrupt.h>
 
 #include <cbuffer.h>
+#include <devices.h>
 
 #include <libc.h>
 
@@ -24,6 +25,8 @@ void writeMSR(int number, int value);
 int get_fault_eip();
 
 struct cbuffer keyboard_buffer;
+
+extern struct list_head readyqueue;
 
 char char_map[] =
 {
@@ -110,17 +113,33 @@ void setIdt()
 
 void keyboard_routine()
 {
-    unsigned char data = inb(0x60);
-    if ((data & 0x80) == 0) {
-		if (!cbuffer_full(&keyboard_buffer))
-				cbuffer_push(&keyboard_buffer, char_map[data & 0x7F]);
-    }
+	unsigned char data = inb(0x60);
+	if ((data & 0x80) == 0) {
+		if (!cbuffer_full(&keyboard_buffer)) {
+			cbuffer_push(&keyboard_buffer, char_map[data & 0x7F]);
+			struct list_head *e = list_first(&blocked);
+			list_del(e);
+			struct task_struct *t = list_entry(e, struct task_struct, list);
+			update_process_state_rr(t, &readyqueue);
+		}
+	}
 }
 
 void clock_routine()
 {
-    zeos_show_clock();
     ++zeos_ticks;
+    zeos_show_clock();
+
+    struct list_head *l;
+    struct task_struct *t;
+    list_for_each(l, &blocked) {
+	t = list_entry(l, struct task_struct, list);
+    	if (t->timeout >= zeos_ticks) {
+		t->timeout = -1;
+		update_process_state_rr(t, &readyqueue);
+	}
+    }
+
     schedule();
 }
 

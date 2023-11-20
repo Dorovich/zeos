@@ -6,7 +6,7 @@
 struct cbuffer {
     char buffer[CBUFFER_SIZE];
     int head, tail;
-}
+};
 
 // -----------------------------
 // |   | A | Z | F |   |   |   |

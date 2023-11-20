@@ -127,9 +127,9 @@ void inner_task_switch(union task_union *t) {
     set_cr3(t->task.dir_pages_baseAddr);
     quantum = get_quantum(&t->task);
     current()->kernel_esp = get_ebp();
-    update_system_to_ready();
+    update_system_to_ready_ticks();
     set_esp(t->task.kernel_esp);
-    update_ready_to_system();
+    update_ready_to_system_ticks();
 }
 
 int ret_from_fork() {

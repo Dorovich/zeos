@@ -179,12 +179,12 @@ int sys_get_stats (int pid, struct stats *st)
 int sys_waitKey(char* b, int timeout) {
 	if (b == NULL) return -1;
 	if (cbuffer_empty(&keyboard_buffer)) {
-	
+		current()->timeout = zeos_ticks + timeout*18; // pasar de segundos a ticks (1 s -> 18 ticks)
+		update_process_state_rr(current(), &blocked);
 	}
-	if (!cbuffer_empty(&keyboard_buffer)) 
+	if (!cbuffer_empty(&keyboard_buffer)) {
 		*b = cbuffer_pop(&keyboard_buffer);
+		return 0;
+	}
 	return -1;
-
-		
-	
 }

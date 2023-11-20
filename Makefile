@@ -39,6 +39,7 @@ SYSOBJ = \
 	switch.o \
 	shared.o \
 	stats.o \
+	cbuffer.o \
 
 LIBZEOS = -L . -l zeos
 
@@ -105,6 +106,8 @@ shared.o:shared.c $(INCLUDEDIR)/shared.h
 
 mm.o:mm.c $(INCLUDEDIR)/types.h $(INCLUDEDIR)/mm.h
 
+cbuffer.o:cbuffer.c $(INCLUDEDIR)/cbuffer.h
+
 stats.o:stats.c $(INCLUDEDIR)/stats.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/utils.h 
 
 sys.o:sys.c $(INCLUDEDIR)/devices.h
@@ -112,7 +115,7 @@ sys.o:sys.c $(INCLUDEDIR)/devices.h
 utils.o:utils.c $(INCLUDEDIR)/utils.h
 
 
-system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/system.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/mm.h $(INCLUDEDIR)/io.h $(INCLUDEDIR)/mm_address.h $(INCLUDEDIR)/shared.h
+system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/system.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/mm.h $(INCLUDEDIR)/io.h $(INCLUDEDIR)/mm_address.h $(INCLUDEDIR)/shared.h $(INCLUDEDIR)/cbuffer.h
 
 
 system: system.o system.lds $(SYSOBJ)
