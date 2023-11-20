@@ -8,6 +8,7 @@
 #include <mm_address.h>
 #include <sched.h>
 #include <stats.h>
+#include <interrupt.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -176,16 +177,14 @@ int sys_get_stats (int pid, struct stats *st)
 }
 
 int sys_waitKey(char* b, int timeout) {
-	// si hay algo en el buffer
-	// b = buffer[head];
-	//
-	// si no
-	// bloqueao
-	// cuenta regresiva
-	// check si hay algo en el buffer
-	//
-	// acaba cuenta regresiva
-	// return -1
+	if (b == NULL) return -1;
+	if (cbuffer_empty(&keyboard_buffer)) {
 	
+	}
+	if (!cbuffer_empty(&keyboard_buffer)) 
+		*b = cbuffer_pop(&keyboard_buffer);
+	return -1;
+
+		
 	
 }
