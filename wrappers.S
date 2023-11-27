@@ -1,5 +1,26 @@
 #include <asm.h>
 
+ENTRY(syscall_sysenter)
+	push %ecx
+	push %edx
+	push $SYSENTER_RETURN
+	push %ebp
+	mov %esp, %ebp
+	sysenter
+ENTRY(SYSENTER_RETURN)
+	pop %ebp
+	pop %edx
+	pop %edx
+	pop %ecx
+	ret
+
+nok:
+	neg %eax
+	mov %eax, errno
+	mov $-1, %eax
+	popl %ebp
+	ret	
+
 ENTRY(write)
         pushl %ebp
         movl %esp, %ebp
@@ -12,168 +33,73 @@ ENTRY(write)
 
         // excepcion
         movl $4, %eax
-	push %ecx
-	push %edx
-	push $cont_write
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-cont_write:
-	pop %ebp
-	addl $4, %esp
-	pop %edx
-	pop %ecx
-
-        cmpl $0, %eax
-        jge end_write
-err_write:
-        neg %eax
-        movl %eax, errno
-        movl $-1, %eax
-end_write:    
-        popl %ebx
-        movl %ebp, %esp
-        popl %ebp
+	call syscall_sysenter
+	popl %ebp
+	test %eax, %eax
+	js nok
+	popl %ebp
         ret
 
 ENTRY(gettime)
-        pushl %ebp
-        movl %esp, %ebp
-
-        // excepcion
-        movl $10, %eax
-	push %ecx
-	push %edx
-	push $cont_gettime
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-cont_gettime:
-	pop %ebp
-	addl $4, %esp
-	pop %edx
-	pop %ecx
-
-        cmpl $0, %eax
-        jge end_gettime
-err_gettime:
-        neg %eax
-        movl %eax, errno
-        movl $-1, %eax
-end_gettime:
-        movl %ebp, %esp
-        popl %ebp
-        ret
+	pushl %ebp
+	movl %esp, %ebp
+	movl $10, %eax
+	call syscall_sysenter
+	popl %ebp
+	ret
 
 ENTRY(getpid)
-        pushl %ebp
-        movl %esp, %ebp
-
-        // excepcion
-        movl $20, %eax
-	push %ecx
-	push %edx
-	push $cont_getpid
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-cont_getpid:
-	pop %ebp
-	addl $4, %esp
-	pop %edx
-	pop %ecx
-
-        cmpl $0, %eax
-        jge end_getpid
-err_getpid:
-        neg %eax
-        movl %eax, errno
-        movl $-1, %eax
-end_getpid:    
-        movl %ebp, %esp
-        popl %ebp
-        ret
-        
+	pushl %ebp
+	movl %esp, %ebp
+	movl $20, %eax
+	call syscall_sysenter
+	popl %ebp
+	ret       
+ 
 ENTRY(fork)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $2, %eax
+	call syscall_sysenter
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
         pushl %ebp
         movl %esp, %ebp
-
-        // excepcion
-        movl $2, %eax
-	push %ecx
-	push %edx
-	push $cont_fork
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-cont_fork:
-	pop %ebp
-	addl $4, %esp
-	pop %edx
-	pop %ecx
-
-        cmpl $0, %eax
-        jge end_fork
-err_fork:
-        neg %eax
-        movl %eax, errno
-        movl $-1, %eax
-end_fork:    
-        movl %ebp, %esp
-        popl %ebp
-        ret
 
 ENTRY(exit)
-        pushl %ebp
-        movl %esp, %ebp
-
-        // excepcion
-        movl $1, %eax
-	push %ecx
-	push %edx
-	push $cont_exit
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-cont_exit:
-	pop %ebp
-	addl $4, %esp
-	pop %edx
-	pop %ecx
-end_exit:    
-        movl %ebp, %esp
-        popl %ebp
-        ret
+	pushl %ebp
+	movl %esp, %ebp
+	movl $1, %eax
+	call syscall_sysenter
+	popl %ebp
+	ret
 
 ENTRY(get_stats)
-        pushl %ebp
-        movl %esp, %ebp
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $35, %eax
+	movl 8(%ebp), %ebx;	//pid
+	movl 12(%ebp), %ecx;	//st
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
 
-        // paso de parametros
-        movl 8(%ebp), %edx
-        movl 12(%ebp), %ecx
-
-        // excepcion
-        movl $35, %eax
-	push %ecx
-	push %edx
-	push $cont_get_stats
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-cont_get_stats:
-	pop %ebp
-	addl $4, %esp
-	pop %edx
-	pop %ecx
-
-        cmpl $0, %eax
-        jge end_get_stats
-err_get_stats:
-        neg %eax
-        movl %eax, errno
-        movl $-1, %eax
-end_get_stats:
-        movl %ebp, %esp
-        popl %ebp
-        ret
+ENTRY(waitKey)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $11, %eax
+	movl 8(%ebp), %ebx;	//b*
+	movl 12(%ebp), %ecx;	//timeout
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret

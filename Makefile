@@ -39,6 +39,7 @@ SYSOBJ = \
 	switch.o \
 	shared.o \
 	stats.o \
+	cbuffer.o \
 
 LIBZEOS = -L . -l zeos
 
@@ -98,6 +99,8 @@ interrupt.o:interrupt.c $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/segment.h $(INCL
 io.o:io.c $(INCLUDEDIR)/io.h
 
 sched.o:sched.c $(INCLUDEDIR)/sched.h
+
+cbuffer.o:cbuffer.c $(INCLUDEDIR)/cbuffer.h
 
 libc.o:libc.c $(INCLUDEDIR)/libc.h
 

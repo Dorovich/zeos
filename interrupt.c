@@ -9,6 +9,7 @@
 
 #include <zeos_interrupt.h>
 
+#include <cbuffer.h>
 #include <libc.h>
 
 /* este include y struct externo son para llamar al task_switch desde aqui */
@@ -20,6 +21,8 @@ Register    idtR;
 
 void writeMSR(int number, int value);
 int get_fault_eip();
+
+struct cbuffer keyboard_buffer;
 
 char char_map[] =
 {
