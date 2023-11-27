@@ -6,6 +6,7 @@
 #include <mm.h>
 #include <io.h>
 #include <stats.h>
+#include <devices.h>
 
 union task_union task[NR_TASKS]
 __attribute__((__section__(".data.task")));
@@ -17,7 +18,6 @@ struct task_struct *list_head_to_task_struct(struct list_head *l)
 
 struct list_head freequeue;
 struct list_head readyqueue;
-extern struct list_head blocked;
 
 struct task_struct *idle_task;
 
@@ -127,12 +127,12 @@ void inner_task_switch(union task_union *t) {
     set_cr3(t->task.dir_pages_baseAddr);
     quantum = get_quantum(&t->task);
     current()->kernel_esp = get_ebp();
+    update_system_to_ready_ticks();
     set_esp(t->task.kernel_esp);
     update_ready_to_system_ticks();
 }
 
 int ret_from_fork() {
-    update_system_to_user_ticks();
     return 0;
 }
 
@@ -177,7 +177,6 @@ void sched_next_rr (void) {
         /* printk(pid); */
         /* printk(". "); */
 
-        update_system_to_ready_ticks();
         task_switch((union task_union *)t);
     }
 }

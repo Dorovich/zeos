@@ -24,6 +24,7 @@ struct task_struct {
     page_table_entry *dir_pages_baseAddr;
     int quantum;
     struct stats stats;
+    int timeout;
 };
 
 union task_union {

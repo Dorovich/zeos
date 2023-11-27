@@ -72,15 +72,19 @@
 
 ENTRY(keyboard_handler)
 	SAVE_ALL
-	call keyboard_routine
-	RESTORE_ALL
+	call update_user_to_system_ticks
      	EOI
+	call keyboard_routine
+	call update_system_to_user_ticks
+	RESTORE_ALL
 	iret
 
 ENTRY(clock_handler)
 	SAVE_ALL
+	call update_user_to_system_ticks
 	EOI
 	call clock_routine
+	call update_system_to_user_ticks
 	RESTORE_ALL
 	iret
 
@@ -97,6 +101,7 @@ ENTRY(page_fault_handler_custom)
 
 ENTRY(system_call_handler)
 	SAVE_ALL
+	call update_user_to_system_ticks
         cmpl $0, %eax
         jl err_int
         cmpl $MAX_SYSCALL, %eax
@@ -130,5 +135,6 @@ end_sysenter:
 	RESTORE_ALL
 	movl (%esp), %edx // Return address
 	movl 12(%esp), %ecx // User stack address
+	//call update_system_to_user_ticks
 	sti // Enable interrupts again
 	sysexit

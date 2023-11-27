@@ -8,6 +8,7 @@
 #include <mm_address.h>
 #include <sched.h>
 #include <stats.h>
+#include <interrupt.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -27,22 +28,16 @@ int check_fd(int fd, int permissions)
 
 int sys_ni_syscall()
 {
-    update_user_to_system_ticks();
-    update_system_to_user_ticks();
     return -38; /*ENOSYS*/
 }
 
 int sys_getpid()
 {
-    update_user_to_system_ticks();
-    update_system_to_user_ticks();
     return current()->PID;
 }
 
 int sys_fork()
 {
-    update_user_to_system_ticks();
-    
     // pillar un PCB libre
     struct list_head *e = list_first(&freequeue);
     if (list_empty(e)) return -1;
@@ -118,24 +113,13 @@ int sys_fork()
     // insertar hijo en readyqueue
     list_add_tail(&t->list, &readyqueue);
     
-    update_system_to_user_ticks();
     return new_pid;
 }
 
 void sys_exit()
 {
-    update_user_to_system_ticks();
-    
     int pag;
     page_table_entry *current_PT = get_PT(current());
-    
-    for (pag=0; pag<NUM_PAG_KERNEL; pag++) {
-        free_frame(get_frame(current_PT, (KERNEL_START>>12)+pag));
-    }
-
-    for (pag=0; pag<NUM_PAG_CODE; pag++) {
-        free_frame(get_frame(current_PT, PAG_LOG_INIT_CODE+pag));
-    }
 
     for (pag=0; pag<NUM_PAG_DATA; pag++) {
         free_frame(get_frame(current_PT, PAG_LOG_INIT_DATA+pag));
@@ -148,8 +132,6 @@ void sys_exit()
 
 int sys_write(int fd, char *buffer, int size)
 {
-    update_user_to_system_ticks();
-    
     // comprovaciones
     int valido = check_fd(fd, ESCRIPTURA);
     if (valido < 0) return valido;
@@ -176,26 +158,33 @@ int sys_write(int fd, char *buffer, int size)
         else written += returned;
     }
 
-    update_system_to_user_ticks();
     return written;
 }
 
 int sys_gettime()
 {
-    update_user_to_system_ticks();
-    update_system_to_user_ticks();
     return zeos_ticks;
 }
 
 int sys_get_stats (int pid, struct stats *st)
 {
-    update_user_to_system_ticks();
-    
     struct task_struct *p = get_process_by_pid(pid);
     if (p == NULL) return -1;
     if (st == NULL) return -1;
     copy_data(&p->stats, st, sizeof(struct stats));
     
-    update_system_to_user_ticks();
     return 0;
+}
+
+int sys_waitKey(char* b, int timeout) {
+	if (b == NULL) return -1;
+	if (cbuffer_empty(&keyboard_buffer)) {
+		current()->timeout = zeos_ticks + timeout*18; // pasar de segundos a ticks (1 s -> 18 ticks)
+		update_process_state_rr(current(), &blocked);
+	}
+	if (!cbuffer_empty(&keyboard_buffer)) {
+		*b = cbuffer_pop(&keyboard_buffer);
+		return 0;
+	}
+	return -1;
 }

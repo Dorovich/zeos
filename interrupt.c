@@ -10,6 +10,11 @@
 #include <zeos_interrupt.h>
 
 #include <cbuffer.h>
+<<<<<<< HEAD
+=======
+#include <devices.h>
+
+>>>>>>> final
 #include <libc.h>
 
 /* este include y struct externo son para llamar al task_switch desde aqui */
@@ -24,6 +29,11 @@ int get_fault_eip();
 
 struct cbuffer keyboard_buffer;
 
+<<<<<<< HEAD
+=======
+extern struct list_head readyqueue;
+
+>>>>>>> final
 char char_map[] =
 {
   '\0','\0','1','2','3','4','5','6',
@@ -109,35 +119,38 @@ void setIdt()
 
 void keyboard_routine()
 {
-    update_user_to_system_ticks();
-    
-    unsigned char data = inb(0x60);
-    if ((data & 0x80) == 0) {
-        unsigned char c = char_map[data & 0x7F];
-        if (c != '\0') printc_xy(0, 0, c);
-        else printc_xy(0, 0, 'C');
-
-        /* if (c == 's') schedule(); */
-    }
-    
-    update_system_to_user_ticks();
+	unsigned char data = inb(0x60);
+	if ((data & 0x80) == 0) {
+		if (!cbuffer_full(&keyboard_buffer)) {
+			cbuffer_push(&keyboard_buffer, char_map[data & 0x7F]);
+			struct list_head *e = list_first(&blocked);
+			list_del(e);
+			struct task_struct *t = list_entry(e, struct task_struct, list);
+			update_process_state_rr(t, &readyqueue);
+		}
+	}
 }
 
 void clock_routine()
 {
-    update_user_to_system_ticks();
-    
     ++zeos_ticks;
     zeos_show_clock();
+
+    struct list_head *l;
+    struct task_struct *t;
+    list_for_each(l, &blocked) {
+	t = list_entry(l, struct task_struct, list);
+    	if (t->timeout >= zeos_ticks) {
+		t->timeout = -1;
+		update_process_state_rr(t, &readyqueue);
+	}
+    }
+
     schedule();
-    
-    update_system_to_user_ticks();
 }
 
 void page_fault_routine_custom()
 {
-    update_user_to_system_ticks();
-    
     char addr_buf[32];
     int addr = get_fault_eip();
     //__asm__ __volatile__ ("movl 56(%%ebp), %0" : "=r" (addr));

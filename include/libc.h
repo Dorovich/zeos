@@ -26,4 +26,6 @@ void perror();
 
 int get_stats(int pid, struct stats *st);
 
+int waitKey(char *b, int timeout);
+
 #endif  /* __LIBC_H__ */
