@@ -135,6 +135,6 @@ end_sysenter:
 	RESTORE_ALL
 	movl (%esp), %edx // Return address
 	movl 12(%esp), %ecx // User stack address
-	call update_system_to_user_ticks
+	//call update_system_to_user_ticks
 	sti // Enable interrupts again
 	sysexit
