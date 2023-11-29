@@ -15,6 +15,9 @@
 
 #define NR_PIDS 256
 
+extern struct list_head freequeue;
+extern struct list_head readyqueue;
+
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
 struct task_struct {
@@ -25,6 +28,7 @@ struct task_struct {
     int quantum;
     struct stats stats;
     int timeout;
+    char keyboard_read;
 };
 
 union task_union {

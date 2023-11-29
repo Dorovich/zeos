@@ -9,14 +9,13 @@
 #include <sched.h>
 #include <stats.h>
 #include <interrupt.h>
+#include <cbuffer.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
 
 #define WRITE_MAX 256
 
-extern struct list_head freequeue;
-extern struct list_head readyqueue;
 extern unsigned char pid_list[NR_PIDS];
 
 int check_fd(int fd, int permissions)
@@ -177,14 +176,33 @@ int sys_get_stats (int pid, struct stats *st)
 }
 
 int sys_waitKey(char* b, int timeout) {
-	if (b == NULL) return -1;
-	if (cbuffer_empty(&keyboard_buffer)) {
-		current()->timeout = zeos_ticks + timeout*18; // pasar de segundos a ticks (1 s -> 18 ticks)
-		update_process_state_rr(current(), &blocked);
-	}
-	if (!cbuffer_empty(&keyboard_buffer)) {
-		*b = cbuffer_pop(&keyboard_buffer);
-		return 0;
-	}
-	return -1;
+
+    /*
+      TODO: cuando el cbuffer se empieza a llenar y hay un thread esperando
+      por una tecla este se pone en ready, pero no se asegura que otro thread
+      que haga un waitKey antes de que el que estaba esperando vuelva a
+      ejecutarse le robe la tecla que acaba de entrar en el cbuffer.
+     */
+    
+    if (b == NULL) return -1;
+    
+    if (!cbuffer_empty(&keyboard_buffer)) {
+        printk("hay algo en el bufer. ");
+        current()->keyboard_read = cbuffer_pop(&keyboard_buffer);
+        copy_to_user(&(current()->keyboard_read), b, sizeof(char));
+        return 0;
+    } else {
+        printk("no hay nada en el bufer, bloqueando. ");
+        // pasar de segundos a ticks (1 s -> 18 ticks)
+        current()->timeout = timeout*18;
+        update_process_state_rr(current(), &keyboard_blocked);
+        sched_next_rr();
+
+        printk("desbloqueando. ");
+        if (current()->timeout > 0) {
+            copy_to_user(&(current()->keyboard_read), b, sizeof(char));
+            return 0;
+        }
+    }
+    return -1;
 }

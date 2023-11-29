@@ -7,6 +7,7 @@ ENTRY(syscall_sysenter)
 	push %ebp
 	mov %esp, %ebp
 	sysenter
+        
 ENTRY(SYSENTER_RETURN)
 	pop %ebp
 	pop %edx
@@ -54,8 +55,8 @@ ENTRY(getpid)
 	movl $20, %eax
 	call syscall_sysenter
 	popl %ebp
-	ret       
- 
+	ret
+        
 ENTRY(fork)
 	pushl %ebp
 	movl %esp, %ebp
@@ -90,7 +91,6 @@ ENTRY(get_stats)
 	popl %ebp
 	ret
 
-<<<<<<< HEAD
 ENTRY(waitKey)
 	pushl %ebp
 	movl %esp, %ebp
@@ -104,67 +104,4 @@ ENTRY(waitKey)
 	js nok	// if (eax < 0) -->
 	popl %ebp
 	ret
-=======
-        // paso de parametros
-        movl 8(%ebp), %edx
-        movl 12(%ebp), %ecx
 
-        // excepcion
-        movl $35, %eax
-	push %ecx
-	push %edx
-	push $cont_get_stats
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-cont_get_stats:
-	pop %ebp
-	addl $4, %esp
-	pop %edx
-	pop %ecx
-
-        cmpl $0, %eax
-        jge end_get_stats
-err_get_stats:
-        neg %eax
-        movl %eax, errno
-        movl $-1, %eax
-end_get_stats:
-        movl %ebp, %esp
-        popl %ebp
-        ret
-
-
-ENTRY(waitKey)
-        pushl %ebp
-        movl %esp, %ebp
-
-        // paso de parametros
-        movl 8(%ebp), %edx
-        movl 12(%ebp), %ecx
-
-        // excepcion
-        movl $11, %eax
-	push %ecx
-	push %edx
-	push $cont_waitKey
-	push %ebp
-	mov %esp, %ebp
-	sysenter
-cont_waitKey:
-	pop %ebp
-	addl $4, %esp
-	pop %edx
-	pop %ecx
-
-        cmpl $0, %eax
-        jge end_waitKey
-err_waitKey:
-        neg %eax
-        movl %eax, errno
-        movl $-1, %eax
-end_waitKey:    
-        movl %ebp, %esp
-        popl %ebp
-        ret
->>>>>>> final

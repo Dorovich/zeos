@@ -7,6 +7,7 @@
 #include <io.h>
 #include <stats.h>
 #include <devices.h>
+#include <libc.h>
 
 union task_union task[NR_TASKS]
 __attribute__((__section__(".data.task")));
@@ -127,9 +128,9 @@ void inner_task_switch(union task_union *t) {
     set_cr3(t->task.dir_pages_baseAddr);
     quantum = get_quantum(&t->task);
     current()->kernel_esp = get_ebp();
-    update_system_to_ready_ticks();
+    //update_system_to_ready_ticks();
     set_esp(t->task.kernel_esp);
-    update_ready_to_system_ticks();
+    //update_ready_to_system_ticks();
 }
 
 int ret_from_fork() {
@@ -153,7 +154,7 @@ void update_sched_data_rr (void) {
 }
 
 int needs_sched_rr (void) {
-    if (quantum == 0) return 1;
+    if ((quantum == 0) && (!list_empty(&readyqueue))) return 1;
     return 0;
 }
 
@@ -164,18 +165,18 @@ void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue
 
 void sched_next_rr (void) {
     if (list_empty(&readyqueue)) {
-        /* printk("CAMBIANDO A IDLE. "); */
+        printk("CAMBIANDO A IDLE. ");
         task_switch((union task_union *)idle_task);
     } else {
         struct list_head *e = list_first(&readyqueue);
         list_del(e);
         struct task_struct *t = list_entry(e, struct task_struct, list);
         
-        /* printk("CAMBIANDO A PID "); */
-        /* char pid[8]; */
-        /* itoa(t->PID, pid); */
-        /* printk(pid); */
-        /* printk(". "); */
+        printk("CAMBIANDO A PID ");
+        char pid[8];
+        itoa(t->PID, pid);
+        printk(pid);
+        printk(". ");
 
         task_switch((union task_union *)t);
     }
