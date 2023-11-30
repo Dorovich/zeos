@@ -114,17 +114,15 @@ void keyboard_routine()
     update_user_to_system_ticks();
     
     unsigned char data = inb(0x60);
-    if ((data & 0x80) == 0) {
-        if (!cbuffer_full(&keyboard_buffer)) {
-            unsigned char c = char_map[data & 0x7F];
-            if (!list_empty(&keyboard_blocked)) {
-                struct list_head *e = list_first(&keyboard_blocked);
-                struct task_struct *t = list_entry(e, struct task_struct, list);
-                t->keyboard_read = c;
-                update_process_state_rr(t, &readyqueue);
-            } else {
-                cbuffer_push(&keyboard_buffer, c);
-            }
+    if (!cbuffer_full(&keyboard_buffer) && (data & 0x80) == 0) {
+        unsigned char c = char_map[data & 0x7F];
+        if (!list_empty(&keyboard_blocked)) {
+            struct list_head *e = list_first(&keyboard_blocked);
+            struct task_struct *t = list_entry(e, struct task_struct, list);
+            t->keyboard_read = c;
+            update_process_state_rr(t, &readyqueue);
+        } else {
+            cbuffer_push(&keyboard_buffer, c);
         }
     }
     
