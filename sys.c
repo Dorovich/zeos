@@ -175,7 +175,7 @@ int sys_get_stats (int pid, struct stats *st)
     return 0;
 }
 
-int sys_waitKey(char* b, int timeout) {
+int sys_waitKey(char *b, int timeout) {
 
     /*
       TODO: cuando el cbuffer se empieza a llenar y hay un thread esperando
@@ -187,18 +187,15 @@ int sys_waitKey(char* b, int timeout) {
     if (b == NULL) return -1;
     
     if (!cbuffer_empty(&keyboard_buffer)) {
-        printk("hay algo en el bufer. ");
         current()->keyboard_read = cbuffer_pop(&keyboard_buffer);
         copy_to_user(&(current()->keyboard_read), b, sizeof(char));
         return 0;
     } else {
-        printk("no hay nada en el bufer, bloqueando. ");
         // pasar de segundos a ticks (1 s -> 18 ticks)
         current()->timeout = timeout*18;
         update_process_state_rr(current(), &keyboard_blocked);
         sched_next_rr();
 
-        printk("desbloqueando. ");
         if (current()->timeout > 0) {
             copy_to_user(&(current()->keyboard_read), b, sizeof(char));
             return 0;

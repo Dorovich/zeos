@@ -127,9 +127,9 @@ void inner_task_switch(union task_union *t) {
     set_cr3(get_DIR(&t->task));
     quantum = get_quantum(&t->task);
     current()->kernel_esp = get_ebp();
-    //update_system_to_ready_ticks();
+    update_system_to_ready_ticks();
     set_esp(t->task.kernel_esp);
-    //update_ready_to_system_ticks();
+    update_ready_to_system_ticks();
 }
 
 int ret_from_fork() {
@@ -167,17 +167,17 @@ void update_process_state_rr (struct task_struct *t, struct list_head *dst_queue
 
 void sched_next_rr (void) {
     if (list_empty(&readyqueue)) {
-        printk("CAMBIANDO A IDLE. ");
+        /* printk("CAMBIANDO A IDLE. "); */
         task_switch((union task_union *)idle_task);
     } else {
         struct list_head *e = list_first(&readyqueue);
         struct task_struct *t = list_entry(e, struct task_struct, list);
         
-        printk("CAMBIANDO A PID ");
-        char pid[8];
-        itoa(t->PID, pid);
-        printk(pid);
-        printk(". ");
+        /* printk("CAMBIANDO A PID "); */
+        /* char pid[8]; */
+        /* itoa(t->PID, pid); */
+        /* printk(pid); */
+        /* printk(". "); */
 
         update_process_state_rr(t, NULL);
         task_switch((union task_union *)t);
@@ -187,7 +187,7 @@ void sched_next_rr (void) {
 void schedule (void) {
     update_sched_data_rr();
     if (needs_sched_rr()) {
-        printk("TOCA CAMBIAR DE THREAD. ");
+        /* printk("TOCA CAMBIAR DE THREAD. "); */
         if (current() != idle_task)
             update_process_state_rr(current(), &readyqueue);
         sched_next_rr();

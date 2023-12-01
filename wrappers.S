@@ -80,12 +80,10 @@ ENTRY(exit)
 ENTRY(get_stats)
 	pushl %ebp
 	movl %esp, %ebp
-	pushl %ebx;  // Save EBX, ESI and EDI if modified
 	movl $35, %eax
-	movl 8(%ebp), %ebx;	//pid
+	movl 8(%ebp), %edx;	//pid
 	movl 12(%ebp), %ecx;	//st
 	call syscall_sysenter
-	popl %ebx
 	test %eax, %eax
 	js nok	// if (eax < 0) -->
 	popl %ebp
@@ -94,12 +92,10 @@ ENTRY(get_stats)
 ENTRY(waitKey)
 	pushl %ebp
 	movl %esp, %ebp
-	pushl %ebx;  // Save EBX, ESI and EDI if modified
 	movl $11, %eax
-	movl 8(%ebp), %ebx;	//b*
+	movl 8(%ebp), %edx;	//b*
 	movl 12(%ebp), %ecx;	//timeout
 	call syscall_sysenter
-	popl %ebx
 	test %eax, %eax
 	js nok	// if (eax < 0) -->
 	popl %ebp

@@ -15,7 +15,7 @@ main(void)
     
     char c, err;
     while(1) {
-        err = waitKey(&c, 10);
+        err = waitKey(&c, 99999);
         if (err >= 0) {
             write(1, &c, sizeof(char));
         } else {
