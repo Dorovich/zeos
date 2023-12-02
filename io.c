@@ -13,6 +13,8 @@
 #define NUM_COLUMNS 80
 #define NUM_ROWS    25
 
+struct pointer_struct point;
+
 Byte x, y=19;
 
 /* Read a byte from 'port' */
@@ -83,4 +85,26 @@ void printk(char *string)
   int i;
   for (i = 0; string[i]; i++)
     printc(string[i]);
+}
+
+int point_to (int x, int y, int fg, int bg) {
+
+    /*
+      TODO: cambiar el uso de 'x' e 'y' en este archivo por 'point.x' y 'point.y'
+    */
+    
+    if (x < 0 || x > NUM_ROWS || y < 0 || y > NUM_COLUMNS) return -1;
+    point.x = x;
+    point.y = y;
+    point.fg = fg;
+    point.bg = bg;
+    return 0;
+}
+
+int set_screen (char *s) {
+    point.x = point.y = 0;
+    for (int i=0; i<NUM_ROWS; ++i)
+        for (int j=0; j<NUM_COLUMNS; ++j)
+            printc(s != NULL ? s[i*NUM_ROWS+j] : ' ');
+    return 0;
 }

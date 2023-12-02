@@ -176,16 +176,7 @@ int sys_get_stats (int pid, struct stats *st)
 }
 
 int sys_waitKey(char *b, int timeout) {
-
-    /*
-      TODO: cuando el cbuffer se empieza a llenar y hay un thread esperando
-      por una tecla este se pone en ready, pero no se asegura que otro thread
-      que haga un waitKey antes de que el que estaba esperando vuelva a
-      ejecutarse le robe la tecla que acaba de entrar en el cbuffer.
-     */
-    
     if (b == NULL) return -1;
-    
     if (!cbuffer_empty(&keyboard_buffer)) {
         current()->keyboard_read = cbuffer_pop(&keyboard_buffer);
         copy_to_user(&(current()->keyboard_read), b, sizeof(char));
@@ -202,4 +193,16 @@ int sys_waitKey(char *b, int timeout) {
         }
     }
     return -1;
+}
+
+int sys_gotoXY (int x, int y) {
+    return point_to(x, y, point.fg, point.bg);
+}
+
+int sys_changeColor (int fg, int bg) {
+    return point_to(point.x, point.y, fg, bg);
+}
+
+int sys_clrscr (char *b) {
+    return set_screen(b);
 }
