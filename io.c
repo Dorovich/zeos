@@ -93,7 +93,7 @@ int point_to (int x, int y, int fg, int bg) {
       TODO: cambiar el uso de 'x' e 'y' en este archivo por 'point.x' y 'point.y'
     */
     
-    if (x < 0 || x > NUM_ROWS || y < 0 || y > NUM_COLUMNS) return -1;
+    if (x < 0 || x > NUM_COLUMNS || y < 0 || y > NUM_ROWS) return -1;
     point.x = x;
     point.y = y;
     point.fg = fg;
