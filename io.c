@@ -75,7 +75,7 @@ void printc_xy(Byte mx, Byte my, char c)
   cy=y;
   x=mx;
   y=my;
-  printc(c);
+  printc_color(c, point.fg);
   x=cx;
   y=cy;
 }

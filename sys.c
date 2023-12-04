@@ -206,3 +206,7 @@ int sys_changeColor (int fg, int bg) {
 int sys_clrscr (char *b) {
     return set_screen(b);
 }
+
+int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter) {
+
+}
