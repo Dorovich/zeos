@@ -136,9 +136,9 @@ void clock_routine()
     ++zeos_ticks;
     zeos_show_clock();
 
-    struct list_head *e;
+    struct list_head *e, *n;
     struct task_struct *t;
-    list_for_each(e, &keyboard_blocked) {
+    list_for_each_safe(e, n, &keyboard_blocked) {
 	t = list_entry(e, struct task_struct, list);
         t->timeout--;
     	if (t->timeout <= 0) {

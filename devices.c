@@ -9,8 +9,10 @@ int sys_write_console(char *buffer,int size)
 {
   int i;
   
-  for (i=0; i<size; i++)
+  for (i=0; i<size; i++) {
     printc_xy(point.x, point.y, buffer[i]);
-  
+    point.x++;
+  }
+
   return size;
 }

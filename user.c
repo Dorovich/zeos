@@ -10,12 +10,14 @@ int addAsm(int a, int b);
 int __attribute__ ((__section__(".text.main")))
 main(void)
 {
+    gotoXY(0, 0);
+    changeColor(255, 0);
     char msg[256] = "   Codigo de usuario ejecutandose:\n";
     write(1, msg, strlen(msg));
     
     char c, err;
     while(1) {
-        err = waitKey(&c, 99999);
+        err = waitKey(&c, 30);
         if (err >= 0) {
             write(1, &c, sizeof(char));
         } else {
