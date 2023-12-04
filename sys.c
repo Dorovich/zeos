@@ -208,5 +208,28 @@ int sys_clrscr (char *b) {
 }
 
 int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter) {
+    // pillar un TCB (PCB) libre
+    if (list_empty(&freequeue)) return -1;
+    struct list_head *e = list_first(&freequeue);
+    struct task_struct *t = list_entry(e, struct task_struct, list);
+    
+    // copiar el task_union
+    copy_data(current(), t, sizeof(union task_union));
 
+    // TODO: alojar la pila para el nuevo thread
+  
+    // inicializar sus stats a cero (nose si de tiene que hacer)
+    INIT_STATS(&t->stats);
+  
+    // TODO: preparar la pila
+    union task_union *u = (union task_union *)t;
+    int stack_offset = 18;
+    u->stack[KERNEL_STACK_SIZE-stack_offset-1] = 0; // ebp
+    u->stack[KERNEL_STACK_SIZE-stack_offset] = (unsigned long)ret_from_fork; // @ret
+    t->kernel_esp = (unsigned long int)&u->stack[KERNEL_STACK_SIZE-stack_offset-1];
+    
+    // insertar en readyqueue
+    update_process_state_rr(t, &readyqueue);
+    
+    return 0;
 }
