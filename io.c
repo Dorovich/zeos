@@ -31,18 +31,18 @@ void printc(char c)
      __asm__ __volatile__ ( "movb %0, %%al; outb $0xe9" ::"a"(c)); /* Magic BOCHS debug: writes 'c' to port 0xe9 */
   if (c=='\n')
   {
-    x = 0;
-    y=(y+1)%NUM_ROWS;
+    point.x = 0;
+    point.y=(point.y+1)%NUM_ROWS;
   }
   else
   {
-      Word ch = (Word) (c & 0x00FF) | 0x0200;
+      Word ch = (Word) (c & 0x00FF) | (point.fg<<8 & 0x0F00) | (point.bg<<12 & 0x7000);
       Word *screen = (Word *)0xb8000;
-      screen[(y * NUM_COLUMNS + x)] = ch;
-    if (++x >= NUM_COLUMNS)
+      screen[(point.y * NUM_COLUMNS + point.x)] = ch;
+    if (++point.x >= NUM_COLUMNS)
     {
-      x = 0;
-      y=(y+1)%NUM_ROWS;
+      point.x = 0;
+      point.y=(point.y+1)%NUM_ROWS;
     }
   }
 }
@@ -52,18 +52,18 @@ void printc_color(char c, char l)
      __asm__ __volatile__ ( "movb %0, %%al; outb $0xe9" ::"a"(c)); /* Magic BOCHS debug: writes 'c' to port 0xe9 */
   if (c=='\n')
   {
-    x = 0;
-    y=(y+1)%NUM_ROWS;
+    point.x = 0;
+    point.y=(point.y+1)%NUM_ROWS;
   }
   else
   {
       Word ch = (Word) (c & 0x00FF) | (l & 0xFF00);
       Word *screen = (Word *)0xb8000;
-      screen[(y * NUM_COLUMNS + x)] = ch;
-    if (++x >= NUM_COLUMNS)
+      screen[(point.y * NUM_COLUMNS + point.x)] = ch;
+    if (++point.x >= NUM_COLUMNS)
     {
-      x = 0;
-      y=(y+1)%NUM_ROWS;
+      point.x = 0;
+      point.y=(point.y+1)%NUM_ROWS;
     }
   }
 }
@@ -71,13 +71,13 @@ void printc_color(char c, char l)
 void printc_xy(Byte mx, Byte my, char c)
 {
   Byte cx, cy;
-  cx=x;
-  cy=y;
-  x=mx;
-  y=my;
-  printc_color(c, point.fg);
-  x=cx;
-  y=cy;
+  cx=point.x;
+  cy=point.y;
+  point.x=mx;
+  point.y=my;
+  printc(c);
+  point.x=cx;
+  point.y=cy;
 }
 
 void printk(char *string)
@@ -102,9 +102,11 @@ int point_to (int x, int y, int fg, int bg) {
 }
 
 int set_screen (char *s) {
-    point.x = point.y = 0;
+    int cx = point.x, cy = point.y;
+    point.x = 0; point.y = 0;
     for (int i=0; i<NUM_ROWS; ++i)
         for (int j=0; j<NUM_COLUMNS; ++j)
             printc(s != NULL ? s[i*NUM_ROWS+j] : ' ');
+    point.x = cx; point.y = cy;
     return 0;
 }
