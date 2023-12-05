@@ -10,6 +10,7 @@
 #include <stats.h>
 #include <interrupt.h>
 #include <cbuffer.h>
+#include <shared.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -212,21 +213,56 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
     if (list_empty(&freequeue)) return -1;
     struct list_head *e = list_first(&freequeue);
     struct task_struct *t = list_entry(e, struct task_struct, list);
+    page_table_entry *PT = get_PT(current());
     
     // copiar el task_union
     copy_data(current(), t, sizeof(union task_union));
 
-    // TODO: alojar la pila para el nuevo thread
-  
+    // alojar la pila para el nuevo thread
+    // paso 1) buscar region de la TP consecutiva de N posiciones
+    int pag = TOTAL_PAGES-1, found_pag = -1;
+    while (pag>PAG_LOG_INIT_DATA+NUM_PAG_DATA+N && found_pag<0) {
+        if (PT[pag].entry == 0) {
+            // comprobar N-1 siguientes posiciones de la TP
+            int offset = 1;
+            while (offset < N && TP[pag-offset].entry == 0) ++offset;
+            if (offset == N) found_pag = pag;
+            else pag -= offset;
+        }
+    }
+    // paso 2) alojar frames si se ha encontado la region
+    if (found_pag<0) return -1;
+    for (pag=0; pag<N; ++pag) {
+        int new_frame = alloc_frame();
+        if (new_frame<0) return -1;
+        set_ss_pag(PT, found_pag-pag, new_frame);
+    }
+    /* PONER LA DIRECCION DE LA BASE DE LA NUEVA PILA, QUE CREO QUE ES
+       found_pag<<12, EN EL CTX HW (ESP) DEL NUEVO THREAD */
+
     // inicializar sus stats a cero (nose si de tiene que hacer)
     INIT_STATS(&t->stats);
   
-    // TODO: preparar la pila
+    // preparar la pila
+    /*
+      pila sistema:
+      EIP <- threadCallWrapper
+      CS
+      PSW
+      ESP <- (found_pag<<12) - 2*sizeof(void *) - sizeof(int)
+      SS
+     */
+    // paso 1) pila de sistema (igual con esto ya nos sirve)
     union task_union *u = (union task_union *)t;
+    u->stack[KERNEL_STACK_SIZE-5] = threadCallWrapper; // eip (pa cuando vuelva a modo usuario)
     int stack_offset = 18;
     u->stack[KERNEL_STACK_SIZE-stack_offset-1] = 0; // ebp
-    u->stack[KERNEL_STACK_SIZE-stack_offset] = (unsigned long)ret_from_fork; // @ret
+    u->stack[KERNEL_STACK_SIZE-stack_offset] = (unsigned long)ret_from_fork; // @ret (es para que cuando el scheduler lo pille se llame a algo y vuelva, esto no hace nada casi)
     t->kernel_esp = (unsigned long int)&u->stack[KERNEL_STACK_SIZE-stack_offset-1];
+    // paso 2) pila de usuario (pinta travieso, es para el threadCallWrapper)
+    *((found_pag<<12) - sizeof(void *)) = parameter;
+    *((found_pag<<12) - 2*sizeof(void *)) = function;
+    *((found_pag<<12) - 2*sizeof(void *) - sizeof(int)) = 0;
     
     // insertar en readyqueue
     update_process_state_rr(t, &readyqueue);

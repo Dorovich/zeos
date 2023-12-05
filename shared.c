@@ -34,3 +34,9 @@ void itoh(int a, char *b)
   }
   b[i]=0;
 }
+
+void threadCallWrapper (void (*function)(void *arg), void *parameter) {
+    (*function)(parameter);
+    exit();
+}
+
