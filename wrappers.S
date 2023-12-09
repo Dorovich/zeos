@@ -135,8 +135,8 @@ ENTRY(clrscr)
 	ret
 
 ENTRY(threadCallWrapper)
-        pushl 12(%ebp)
-        call 8(%ebp)
+        pushl 4(%esp)
+        call (%esp)
         call exit
 
 ENTRY(threadCreateWithStack)

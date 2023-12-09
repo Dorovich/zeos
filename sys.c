@@ -261,18 +261,18 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
     t->temp_stack_size = N;
 
     // preparar la pila
+    int base_addr = (found_pag+1)<<12;
     
     // paso 1) pila de sistema 
     union task_union *u = (union task_union *)t;
     u->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
-    u->stack[KERNEL_STACK_SIZE-2] = ((found_pag+1)<<12) - 2*sizeof(void *) - sizeof(int); // esp
+    u->stack[KERNEL_STACK_SIZE-2] = base_addr - 2*sizeof(void *); // esp
     int stack_offset = 18;
     t->kernel_esp = (unsigned long int)&u->stack[KERNEL_STACK_SIZE-stack_offset];
     
     // paso 2) pila de usuario (pinta travieso, es para el threadCallWrapper)
-    *(void **)(((found_pag+1)<<12) - sizeof(void *)) = parameter;
-    *(void **)(((found_pag+1)<<12) - 2*sizeof(void *)) = function;
-    *(int *)(((found_pag+1)<<12) - 2*sizeof(void *) - sizeof(int)) = 0;
+    *(void **)(base_addr - sizeof(void *)) = parameter;
+    *(void **)(base_addr - 2*sizeof(void *)) = function;
 
     // insertar en readyqueue
     /* update_process_state_rr(t, &readyqueue); */
