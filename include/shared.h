@@ -6,8 +6,8 @@
 #ifndef __SHARED_H__
 #define __SHARED_H__
 
-void itoh(int a, char *b);
+#include <libc.h>
 
-void threadCallWrapper (void (*function)(void *arg), void *parameter);
+void itoh(int a, char *b);
 
 #endif /* __SHARED_H__ */

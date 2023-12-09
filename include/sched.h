@@ -18,10 +18,14 @@
 extern struct list_head freequeue;
 extern struct list_head readyqueue;
 
+extern unsigned int global_PID;
+extern unsigned int global_TID;
+
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
 struct task_struct {
     int PID;			/* Process ID. This MUST be the first field of the struct. */
+    int TID;
     struct list_head list;
     unsigned long kernel_esp;
     page_table_entry *dir_pages_baseAddr;
@@ -29,6 +33,8 @@ struct task_struct {
     struct stats stats;
     int timeout;
     char keyboard_read;
+    int temp_stack_page;
+    int temp_stack_size;
 };
 
 union task_union {

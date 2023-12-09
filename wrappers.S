@@ -20,7 +20,7 @@ nok:
 	mov %eax, errno
 	mov $-1, %eax
 	popl %ebp
-	ret	
+	ret
 
 ENTRY(write)
         pushl %ebp
@@ -35,7 +35,7 @@ ENTRY(write)
         // excepcion
         movl $4, %eax
 	call syscall_sysenter
-	popl %ebp
+	popl %ebx
 	test %eax, %eax
 	js nok
 	popl %ebp
@@ -66,8 +66,6 @@ ENTRY(fork)
 	js nok	// if (eax < 0) -->
 	popl %ebp
 	ret
-        pushl %ebp
-        movl %esp, %ebp
 
 ENTRY(exit)
 	pushl %ebp
@@ -136,20 +134,28 @@ ENTRY(clrscr)
 	popl %ebp
 	ret
 
+ENTRY(threadCallWrapper)
+        pushl 12(%ebp)
+        call 8(%ebp)
+        call exit
+
 ENTRY(threadCreateWithStack)
         pushl %ebp
         movl %esp, %ebp
         pushl %ebx
+        pushl %esi
 
         // paso de parametros
         movl 8(%ebp), %edx
         movl 12(%ebp), %ecx
         movl 16(%ebp), %ebx
+        movl $threadCallWrapper, %esi
 
         // excepcion
         movl $25, %eax
 	call syscall_sysenter
-	popl %ebp
+        popl %esi
+	popl %ebx
 	test %eax, %eax
 	js nok
 	popl %ebp

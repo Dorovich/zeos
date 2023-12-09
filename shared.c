@@ -1,4 +1,5 @@
 #include <shared.h>
+#include <libc.h>
 
 void itoh(int a, char *b)
 {
@@ -34,9 +35,3 @@ void itoh(int a, char *b)
   }
   b[i]=0;
 }
-
-void threadCallWrapper (void (*function)(void *arg), void *parameter) {
-    (*function)(parameter);
-    exit();
-}
-

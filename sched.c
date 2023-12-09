@@ -22,7 +22,8 @@ struct list_head readyqueue;
 
 struct task_struct *idle_task;
 
-unsigned char pid_list[NR_PIDS];
+unsigned int global_PID = 0;
+unsigned int global_TID = 1;
 
 int quantum;
 
@@ -66,8 +67,8 @@ void init_idle (void)
     struct list_head *e = list_first(&freequeue);
     list_del(e);
     struct task_struct *t = list_entry(e, struct task_struct, list);
-    t->PID = 0;
-    pid_list[t->PID] = 1;
+    t->PID = global_PID++;
+    t->TID = 0;
     INIT_STATS(&t->stats);
     INIT_LIST_HEAD(&t->list);
     set_quantum(t, 100);
@@ -85,8 +86,8 @@ void init_task1(void)
     struct list_head *e = list_first(&freequeue);
     list_del(e);
     struct task_struct *t = list_entry(e, struct task_struct, list);
-    t->PID = 1;
-    pid_list[t->PID] = 1;
+    t->PID = global_PID++;
+    t->TID = 0;
     INIT_STATS(&t->stats);
     INIT_LIST_HEAD(&t->list);
     set_quantum(t, 100);
@@ -137,7 +138,7 @@ int ret_from_fork() {
 }
 
 struct task_struct* get_process_by_pid (int pid) {
-    if (pid_list[pid] == 0) return NULL; // no existe el proceso con PID = pid
+    if (pid >= global_PID) return NULL; // no existe el proceso con PID = pid
     if (current()->PID == pid) return current();
 
     struct list_head *l;
@@ -173,11 +174,14 @@ void sched_next_rr (void) {
         struct list_head *e = list_first(&readyqueue);
         struct task_struct *t = list_entry(e, struct task_struct, list);
         
-        /* printk("CAMBIANDO A PID "); */
-        /* char pid[8]; */
-        /* itoa(t->PID, pid); */
-        /* printk(pid); */
-        /* printk(". "); */
+        /* printk("CAMBIANDO A THREAD (PID: "); */
+        /* char info[8]; */
+        /* itoa(t->PID, info); */
+        /* printk(info); */
+        /* printk(", TID: "); */
+        /* itoa(t->TID, info); */
+        /* printk(info); */
+        /* printk("). "); */
 
         update_process_state_rr(t, NULL);
         task_switch((union task_union *)t);

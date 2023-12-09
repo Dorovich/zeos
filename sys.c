@@ -10,7 +10,6 @@
 #include <stats.h>
 #include <interrupt.h>
 #include <cbuffer.h>
-#include <shared.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
@@ -89,16 +88,8 @@ int sys_fork()
     set_cr3(current()->dir_pages_baseAddr);
   
     // cambiar campos del task_struct del hijo no comunes con el padre
-  
-    // asignar un PID al proceso
-    int new_pid;
-    do {
-        new_pid = (zeos_ticks+zeos_ticks+zeos_ticks)%NR_PIDS;
-    } while (pid_list[new_pid] == 1);
-    t->PID = new_pid;
-    pid_list[new_pid] = 1;
-
-    // inicializar sus stats a cero
+    t->PID = global_PID++;
+    t->TID = 0;
     INIT_STATS(&t->stats);
   
     // preparar la pila del hijo
@@ -113,7 +104,7 @@ int sys_fork()
     // insertar hijo en readyqueue
     list_add_tail(&t->list, &readyqueue);
     
-    return new_pid;
+    return t->PID;
 }
 
 void sys_exit()
@@ -121,18 +112,37 @@ void sys_exit()
     int pag;
     page_table_entry *current_PT = get_PT(current());
 
-    for (pag=0; pag<NUM_PAG_DATA; pag++) {
-        free_frame(get_frame(current_PT, PAG_LOG_INIT_DATA+pag));
+    if (current()->TID == 0) {
+        for (pag=0; pag<NUM_PAG_DATA; pag++) {
+            free_frame(get_frame(current_PT, PAG_LOG_INIT_DATA+pag));
+            del_ss_pag(current_PT, PAG_LOG_INIT_DATA+pag);
+        }
+    } else {
+        int base_pag = current()->temp_stack_page;
+        for (pag=0; pag<current()->temp_stack_size; pag++) {
+            free_frame(get_frame(current_PT, base_pag-pag));
+            del_ss_pag(current_PT, base_pag-pag);
+        }
     }
 
-    pid_list[current()->PID] = 0;
+    printk("exit realizado (PID: ");
+    char info[20];
+    itoa(current()->PID, info);
+    printk(info);
+    printk(", TID: ");
+    itoa(current()->TID, info);
+    printk(info);
+    printk("). ");
+        
+    current()->PID = -1;
+    current()->TID = -1;
     update_process_state_rr(current(), &freequeue);
     sched_next_rr();
 }
 
 int sys_write(int fd, char *buffer, int size)
 {
-    // comprovaciones
+    // comprobaciones
     int valido = check_fd(fd, ESCRIPTURA);
     if (valido < 0) return valido;
     if (buffer == NULL) return -1;
@@ -208,28 +218,34 @@ int sys_clrscr (char *b) {
     return set_screen(b);
 }
 
-int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter) {
+int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter, void *wrapper) {
+    /* printk("creando thread. "); */
+    
     // pillar un TCB (PCB) libre
     if (list_empty(&freequeue)) return -1;
     struct list_head *e = list_first(&freequeue);
+    list_del(e);
     struct task_struct *t = list_entry(e, struct task_struct, list);
     page_table_entry *PT = get_PT(current());
-    
+
     // copiar el task_union
     copy_data(current(), t, sizeof(union task_union));
 
     // alojar la pila para el nuevo thread
+    
     // paso 1) buscar region de la TP consecutiva de N posiciones
     int pag = TOTAL_PAGES-1, found_pag = -1;
     while (pag>PAG_LOG_INIT_DATA+NUM_PAG_DATA+N && found_pag<0) {
         if (PT[pag].entry == 0) {
             // comprobar N-1 siguientes posiciones de la TP
             int offset = 1;
-            while (offset < N && TP[pag-offset].entry == 0) ++offset;
+            while (offset < N && PT[pag-offset].entry == 0) ++offset;
             if (offset == N) found_pag = pag;
             else pag -= offset;
         }
+        else pag -= 1;
     }
+
     // paso 2) alojar frames si se ha encontado la region
     if (found_pag<0) return -1;
     for (pag=0; pag<N; ++pag) {
@@ -237,35 +253,39 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
         if (new_frame<0) return -1;
         set_ss_pag(PT, found_pag-pag, new_frame);
     }
-    /* PONER LA DIRECCION DE LA BASE DE LA NUEVA PILA, QUE CREO QUE ES
-       found_pag<<12, EN EL CTX HW (ESP) DEL NUEVO THREAD */
 
-    // inicializar sus stats a cero (nose si de tiene que hacer)
+    // cambiar campos diferentes del task_struct
     INIT_STATS(&t->stats);
-  
+    t->TID = global_TID++;
+    t->temp_stack_page = found_pag;
+    t->temp_stack_size = N;
+
     // preparar la pila
-    /*
-      pila sistema:
-      EIP <- threadCallWrapper
-      CS
-      PSW
-      ESP <- (found_pag<<12) - 2*sizeof(void *) - sizeof(int)
-      SS
-     */
-    // paso 1) pila de sistema (igual con esto ya nos sirve)
+    
+    // paso 1) pila de sistema 
     union task_union *u = (union task_union *)t;
-    u->stack[KERNEL_STACK_SIZE-5] = threadCallWrapper; // eip (pa cuando vuelva a modo usuario)
+    u->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
+    u->stack[KERNEL_STACK_SIZE-2] = ((found_pag+1)<<12) - 2*sizeof(void *) - sizeof(int); // esp
     int stack_offset = 18;
-    u->stack[KERNEL_STACK_SIZE-stack_offset-1] = 0; // ebp
-    u->stack[KERNEL_STACK_SIZE-stack_offset] = (unsigned long)ret_from_fork; // @ret (es para que cuando el scheduler lo pille se llame a algo y vuelva, esto no hace nada casi)
-    t->kernel_esp = (unsigned long int)&u->stack[KERNEL_STACK_SIZE-stack_offset-1];
+    t->kernel_esp = (unsigned long int)&u->stack[KERNEL_STACK_SIZE-stack_offset];
+    
     // paso 2) pila de usuario (pinta travieso, es para el threadCallWrapper)
-    *((found_pag<<12) - sizeof(void *)) = parameter;
-    *((found_pag<<12) - 2*sizeof(void *)) = function;
-    *((found_pag<<12) - 2*sizeof(void *) - sizeof(int)) = 0;
-    
+    *(void **)(((found_pag+1)<<12) - sizeof(void *)) = parameter;
+    *(void **)(((found_pag+1)<<12) - 2*sizeof(void *)) = function;
+    *(int *)(((found_pag+1)<<12) - 2*sizeof(void *) - sizeof(int)) = 0;
+
     // insertar en readyqueue
-    update_process_state_rr(t, &readyqueue);
-    
+    /* update_process_state_rr(t, &readyqueue); */
+    list_add_tail(&t->list, &readyqueue);
+
+    /* printk("thread creado (PID: "); */
+    /* char info[20]; */
+    /* itoa(t->PID, info); */
+    /* printk(info); */
+    /* printk(", TID: "); */
+    /* itoa(t->TID, info); */
+    /* printk(info); */
+    /* printk("). "); */
+       
     return 0;
 }
