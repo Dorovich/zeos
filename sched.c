@@ -27,6 +27,9 @@ unsigned int global_TID = 1;
 
 int quantum;
 
+struct sem_t semaphores[SEM_NUM];
+struct list_head sem_freequeue;
+
 void writeMSR(int number, int value);
 unsigned int get_ebp();
 void set_esp(unsigned int new_esp);
@@ -71,6 +74,7 @@ void init_idle (void)
     t->TID = 0;
     INIT_STATS(&t->stats);
     INIT_LIST_HEAD(&t->list);
+    t->called_to_die = 0;
     set_quantum(t, 100);
     allocate_DIR(t);
         
@@ -90,6 +94,7 @@ void init_task1(void)
     t->TID = 0;
     INIT_STATS(&t->stats);
     INIT_LIST_HEAD(&t->list);
+    t->called_to_die = 0;
     set_quantum(t, 100);
     allocate_DIR(t);
     set_user_pages(t);
@@ -109,6 +114,7 @@ void init_sched()
     for(int i=0; i<NR_TASKS; ++i) {
         list_add_tail(&task[i].task.list, &freequeue);
     }
+    init_semaphores();
 }
 
 struct task_struct* current()
@@ -204,4 +210,10 @@ int get_quantum (struct task_struct *t) {
 
 void set_quantum (struct task_struct *t, int new_quantum) {
     t->quantum = new_quantum;
+}
+
+void init_semaphores (void) {
+    INIT_LIST_HEAD(&sem_freequeue);
+    for (int i=0; i<SEM_NUM; ++i)
+        list_add_tail(&(semaphores[i].sem_list), &sem_freequeue);
 }

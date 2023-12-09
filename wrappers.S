@@ -136,7 +136,7 @@ ENTRY(clrscr)
 
 ENTRY(threadCallWrapper)
         pushl 4(%esp)
-        call (%esp)
+        call 4(%esp)
         call exit
 
 ENTRY(threadCreateWithStack)
@@ -160,3 +160,47 @@ ENTRY(threadCreateWithStack)
 	js nok
 	popl %ebp
         ret
+
+ENTRY(semCreate)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $26, %eax
+	movl 8(%ebp), %edx;	//initial_value
+	call syscall_sysenter
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
+        
+ENTRY(semWait)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $27, %eax
+	movl 8(%ebp), %edx;	//s
+	call syscall_sysenter
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
+        
+ENTRY(semSignal)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $28, %eax
+	movl 8(%ebp), %edx;	//s
+	call syscall_sysenter
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
+        
+ENTRY(semDestroy)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $29, %eax
+	movl 8(%ebp), %edx;	//s
+	call syscall_sysenter
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret

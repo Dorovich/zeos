@@ -34,10 +34,10 @@ main(void)
     int n1 = 10, n2 = 20, n3 = 30;
     ret = threadCreateWithStack(hello_there, 1, (void *)&n1);
     if (ret<0) error();
-    /* ret = threadCreateWithStack(hello_there, 2, (void *)&n2); */
-    /* if (ret<0) error(); */
-    /* ret = threadCreateWithStack(hello_there, 1, (void *)&n3); */
-    /* if (ret<0) error(); */
+    ret = threadCreateWithStack(hello_there, 2, (void *)&n2);
+    if (ret<0) error();
+    ret = threadCreateWithStack(hello_there, 1, (void *)&n3);
+    if (ret<0) error();
 
     int n4 = 40;
     char str[16];

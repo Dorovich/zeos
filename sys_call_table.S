@@ -28,10 +28,10 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall//23
 	.long sys_ni_syscall//24
 	.long sys_threadCreateWithStack //25
-	.long sys_ni_syscall//26
-	.long sys_ni_syscall//27
-	.long sys_ni_syscall//28
-	.long sys_ni_syscall//29
+	.long sys_semCreate //26
+	.long sys_semWait //27
+	.long sys_semSignal //28
+	.long sys_semDestroy //29
 	.long sys_ni_syscall//30
 	.long sys_ni_syscall//31
 	.long sys_ni_syscall//32

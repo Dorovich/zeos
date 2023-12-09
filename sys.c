@@ -289,3 +289,50 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
        
     return 0;
 }
+
+struct sem_t *sys_semCreate (int initial_value) {
+    if (list_empty(&sem_freequeue)) return NULL;
+    struct list_head *e = list_first(&sem_freequeue);
+    list_del(e);
+    struct sem_t *new_sem = list_entry(e, struct sem_t, sem_list);
+    new_sem->count = initial_value;
+    INIT_LIST_HEAD(&new_sem->blocked);
+    return new_sem;
+}
+
+int sys_semWait (struct sem_t *s) {
+    if (s == NULL) return -1;
+    s->count--;
+    if (s->count < 0) {
+        update_process_state_rr(current(), &s->blocked);
+        sched_next_rr();
+        if (current()->called_to_die) return -1;
+    }
+    return 0;
+}
+
+int sys_semSignal (struct sem_t *s) {
+    if (s == NULL) return -1;
+    s->count++;
+    if (s->count <= 0 && !list_empty(&s->blocked)) {
+        struct list_head *e = list_first(&s->blocked);
+        struct task_struct *t = list_entry(e, struct task_struct, list);
+        update_process_state_rr(t, &readyqueue);
+    }
+    return 0;
+}
+
+int sys_semDestroy (struct sem_t *s) {
+    if (s == NULL) return -1;
+
+    struct list_head *e, *n;
+    struct task_struct *t;
+    list_for_each_safe(e, n, &s->blocked) {
+	t = list_entry(e, struct task_struct, list);
+        t->called_to_die = 1;
+        update_process_state_rr(t, &readyqueue);
+    }
+    
+    list_add_tail(&s->sem_list, &sem_freequeue);
+    return 0;
+}

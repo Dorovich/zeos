@@ -15,6 +15,8 @@
 
 #define NR_PIDS 256
 
+#define SEM_NUM 10
+
 extern struct list_head freequeue;
 extern struct list_head readyqueue;
 
@@ -33,6 +35,7 @@ struct task_struct {
     struct stats stats;
     int timeout;
     char keyboard_read;
+    int called_to_die;
     int temp_stack_page;
     int temp_stack_size;
 };
@@ -45,6 +48,15 @@ union task_union {
 extern union task_union task[NR_TASKS]; /* Vector de tasques */
 
 extern int quantum;
+
+struct sem_t {
+    int count;
+    struct list_head blocked;
+    struct list_head sem_list;
+};
+
+extern struct sem_t semaphores[SEM_NUM];
+extern struct list_head sem_freequeue;
 
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
 
@@ -84,5 +96,7 @@ void schedule();
 
 int get_quantum (struct task_struct *t);
 void set_quantum (struct task_struct *t, int new_quantum);
+
+void init_semaphores(void);
 
 #endif  /* __SCHED_H__ */

@@ -36,4 +36,12 @@ int clrscr (char *b);
 
 int threadCreateWithStack (void (*function)(void *arg), int N, void *parameter);
 
+struct sem_t *semCreate(int initial_value);
+
+int semWait(struct sem_t *s);
+
+int semSignal(struct sem_t *s);
+
+int semDestroy(struct sem_t *s);
+
 #endif  /* __LIBC_H__ */
