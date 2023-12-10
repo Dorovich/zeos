@@ -125,14 +125,14 @@ void sys_exit()
         }
     }
 
-    printk("exit realizado (PID: ");
-    char info[20];
-    itoa(current()->PID, info);
-    printk(info);
-    printk(", TID: ");
-    itoa(current()->TID, info);
-    printk(info);
-    printk("). ");
+    /* printk("exit realizado (PID: "); */
+    /* char info[20]; */
+    /* itoa(current()->PID, info); */
+    /* printk(info); */
+    /* printk(", TID: "); */
+    /* itoa(current()->TID, info); */
+    /* printk(info); */
+    /* printk("). "); */
         
     current()->PID = -1;
     current()->TID = -1;
