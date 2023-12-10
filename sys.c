@@ -336,3 +336,16 @@ int sys_semDestroy (struct sem_t *s) {
     list_add_tail(&s->sem_list, &sem_freequeue);
     return 0;
 }
+
+int sys_waitKey(char* b, int timeout) {
+	if (b == NULL) return -1;
+	if (cbuffer_empty(&keyboard_buffer)) {
+		current()->timeout = zeos_ticks + timeout*18; // pasar de segundos a ticks (1 s -> 18 ticks)
+		update_process_state_rr(current(), &blocked);
+	}
+	if (!cbuffer_empty(&keyboard_buffer)) {
+		*b = cbuffer_pop(&keyboard_buffer);
+		return 0;
+	}
+	return -1;
+}

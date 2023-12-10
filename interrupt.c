@@ -131,8 +131,6 @@ void keyboard_routine()
 
 void clock_routine()
 {
-    update_user_to_system_ticks();
-    
     ++zeos_ticks;
     zeos_show_clock();
 
@@ -147,14 +145,10 @@ void clock_routine()
     }
     
     schedule();
-    
-    update_system_to_user_ticks();
 }
 
 void page_fault_routine_custom()
 {
-    update_user_to_system_ticks();
-    
     char addr_buf[32];
     int addr = get_fault_eip();
     itoh(addr, addr_buf);
