@@ -9,14 +9,13 @@
 #include <sched.h>
 #include <stats.h>
 #include <interrupt.h>
+#include <cbuffer.h>
 
 #define LECTURA 0
 #define ESCRIPTURA 1
 
 #define WRITE_MAX 256
 
-extern struct list_head freequeue;
-extern struct list_head readyqueue;
 extern unsigned char pid_list[NR_PIDS];
 
 int check_fd(int fd, int permissions)
@@ -89,16 +88,8 @@ int sys_fork()
     set_cr3(current()->dir_pages_baseAddr);
   
     // cambiar campos del task_struct del hijo no comunes con el padre
-  
-    // asignar un PID al proceso
-    int new_pid;
-    do {
-        new_pid = (zeos_ticks+zeos_ticks+zeos_ticks)%NR_PIDS;
-    } while (pid_list[new_pid] == 1);
-    t->PID = new_pid;
-    pid_list[new_pid] = 1;
-
-    // inicializar sus stats a cero
+    t->PID = global_PID++;
+    t->TID = 0;
     INIT_STATS(&t->stats);
   
     // preparar la pila del hijo
@@ -113,7 +104,7 @@ int sys_fork()
     // insertar hijo en readyqueue
     list_add_tail(&t->list, &readyqueue);
     
-    return new_pid;
+    return t->PID;
 }
 
 void sys_exit()
@@ -121,18 +112,37 @@ void sys_exit()
     int pag;
     page_table_entry *current_PT = get_PT(current());
 
-    for (pag=0; pag<NUM_PAG_DATA; pag++) {
-        free_frame(get_frame(current_PT, PAG_LOG_INIT_DATA+pag));
+    if (current()->TID == 0) {
+        for (pag=0; pag<NUM_PAG_DATA; pag++) {
+            free_frame(get_frame(current_PT, PAG_LOG_INIT_DATA+pag));
+            del_ss_pag(current_PT, PAG_LOG_INIT_DATA+pag);
+        }
+    } else {
+        int base_pag = current()->temp_stack_page;
+        for (pag=0; pag<current()->temp_stack_size; pag++) {
+            free_frame(get_frame(current_PT, base_pag-pag));
+            del_ss_pag(current_PT, base_pag-pag);
+        }
     }
 
-    pid_list[current()->PID] = 0;
+    /* printk("exit realizado (PID: "); */
+    /* char info[20]; */
+    /* itoa(current()->PID, info); */
+    /* printk(info); */
+    /* printk(", TID: "); */
+    /* itoa(current()->TID, info); */
+    /* printk(info); */
+    /* printk("). "); */
+        
+    current()->PID = -1;
+    current()->TID = -1;
     update_process_state_rr(current(), &freequeue);
     sched_next_rr();
 }
 
 int sys_write(int fd, char *buffer, int size)
 {
-    // comprovaciones
+    // comprobaciones
     int valido = check_fd(fd, ESCRIPTURA);
     if (valido < 0) return valido;
     if (buffer == NULL) return -1;
@@ -173,6 +183,157 @@ int sys_get_stats (int pid, struct stats *st)
     if (st == NULL) return -1;
     copy_data(&p->stats, st, sizeof(struct stats));
     
+    return 0;
+}
+
+int sys_waitKey(char *b, int timeout) {
+    if (b == NULL) return -1;
+    if (!cbuffer_empty(&keyboard_buffer)) {
+        current()->keyboard_read = cbuffer_pop(&keyboard_buffer);
+        copy_to_user(&(current()->keyboard_read), b, sizeof(char));
+        return 0;
+    } else {
+        // pasar de segundos a ticks (1 s -> 18 ticks)
+        current()->timeout = timeout*18;
+        update_process_state_rr(current(), &keyboard_blocked);
+        sched_next_rr();
+
+        if (current()->timeout > 0) {
+            copy_to_user(&(current()->keyboard_read), b, sizeof(char));
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int sys_gotoXY (int x, int y) {
+    return point_to(x, y, point.fg, point.bg);
+}
+
+int sys_changeColor (int fg, int bg) {
+    return point_to(point.x, point.y, fg, bg);
+}
+
+int sys_clrscr (char *b) {
+    return set_screen(b);
+}
+
+int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter, void *wrapper) {
+    /* printk("creando thread. "); */
+    
+    // pillar un TCB (PCB) libre
+    if (list_empty(&freequeue)) return -1;
+    struct list_head *e = list_first(&freequeue);
+    list_del(e);
+    struct task_struct *t = list_entry(e, struct task_struct, list);
+    page_table_entry *PT = get_PT(current());
+
+    // copiar el task_union
+    copy_data(current(), t, sizeof(union task_union));
+
+    // alojar la pila para el nuevo thread
+    
+    // paso 1) buscar region de la TP consecutiva de N posiciones
+    int pag = TOTAL_PAGES-1, found_pag = -1;
+    while (pag>PAG_LOG_INIT_DATA+NUM_PAG_DATA+N && found_pag<0) {
+        if (PT[pag].entry == 0) {
+            // comprobar N-1 siguientes posiciones de la TP
+            int offset = 1;
+            while (offset < N && PT[pag-offset].entry == 0) ++offset;
+            if (offset == N) found_pag = pag;
+            else pag -= offset;
+        }
+        else pag -= 1;
+    }
+
+    // paso 2) alojar frames si se ha encontado la region
+    if (found_pag<0) return -1;
+    for (pag=0; pag<N; ++pag) {
+        int new_frame = alloc_frame();
+        if (new_frame<0) return -1;
+        set_ss_pag(PT, found_pag-pag, new_frame);
+    }
+
+    // cambiar campos diferentes del task_struct
+    INIT_STATS(&t->stats);
+    t->TID = global_TID++;
+    t->temp_stack_page = found_pag;
+    t->temp_stack_size = N;
+
+    // preparar la pila
+    int base_addr = (found_pag+1)<<12;
+    
+    // paso 1) pila de sistema 
+    union task_union *u = (union task_union *)t;
+    u->stack[KERNEL_STACK_SIZE-5] = (unsigned long)wrapper; // eip
+    u->stack[KERNEL_STACK_SIZE-2] = base_addr - 2*sizeof(void *); // esp
+    int stack_offset = 18;
+    t->kernel_esp = (unsigned long int)&u->stack[KERNEL_STACK_SIZE-stack_offset];
+    
+    // paso 2) pila de usuario (pinta travieso, es para el threadCallWrapper)
+    *(void **)(base_addr - sizeof(void *)) = parameter;
+    *(void **)(base_addr - 2*sizeof(void *)) = function;
+
+    // insertar en readyqueue
+    /* update_process_state_rr(t, &readyqueue); */
+    list_add_tail(&t->list, &readyqueue);
+
+    /* printk("thread creado (PID: "); */
+    /* char info[20]; */
+    /* itoa(t->PID, info); */
+    /* printk(info); */
+    /* printk(", TID: "); */
+    /* itoa(t->TID, info); */
+    /* printk(info); */
+    /* printk("). "); */
+       
+    return 0;
+}
+
+struct sem_t *sys_semCreate (int initial_value) {
+    if (list_empty(&sem_freequeue)) return NULL;
+    struct list_head *e = list_first(&sem_freequeue);
+    list_del(e);
+    struct sem_t *new_sem = list_entry(e, struct sem_t, sem_list);
+    new_sem->count = initial_value;
+    INIT_LIST_HEAD(&new_sem->blocked);
+    return new_sem;
+}
+
+int sys_semWait (struct sem_t *s) {
+    if (s == NULL) return -1;
+    s->count--;
+    if (s->count < 0) {
+        update_process_state_rr(current(), &s->blocked);
+        sched_next_rr();
+        if (current()->called_to_die) return -1;
+    }
+    return 0;
+}
+
+int sys_semSignal (struct sem_t *s) {
+    if (s == NULL) return -1;
+    s->count++;
+    if (s->count <= 0 && !list_empty(&s->blocked)) {
+        struct list_head *e = list_first(&s->blocked);
+        struct task_struct *t = list_entry(e, struct task_struct, list);
+        update_process_state_rr(t, &readyqueue);
+    }
+    return 0;
+}
+
+int sys_semDestroy (struct sem_t *s) {
+    if (s == NULL) return -1;
+
+    struct list_head *e, *n;
+    struct task_struct *t;
+    list_for_each_safe(e, n, &s->blocked) {
+	t = list_entry(e, struct task_struct, list);
+        t->called_to_die = 1;
+        update_process_state_rr(t, &readyqueue);
+    }
+    
+    list_add_tail(&s->sem_list, &sem_freequeue);
     return 0;
 }
 

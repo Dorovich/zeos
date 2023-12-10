@@ -14,9 +14,9 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall//9
         .long sys_gettime //10
 	.long sys_waitKey //11
-	.long sys_ni_syscall//12
-	.long sys_ni_syscall//13
-	.long sys_ni_syscall//14
+	.long sys_gotoXY //12
+	.long sys_changeColor //13
+	.long sys_clrscr //14
 	.long sys_ni_syscall//15
 	.long sys_ni_syscall//16
 	.long sys_ni_syscall//17
@@ -27,11 +27,11 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall//22
 	.long sys_ni_syscall//23
 	.long sys_ni_syscall//24
-	.long sys_ni_syscall//25
-	.long sys_ni_syscall//26
-	.long sys_ni_syscall//27
-	.long sys_ni_syscall//28
-	.long sys_ni_syscall//29
+	.long sys_threadCreateWithStack //25
+	.long sys_semCreate //26
+	.long sys_semWait //27
+	.long sys_semSignal //28
+	.long sys_semDestroy //29
 	.long sys_ni_syscall//30
 	.long sys_ni_syscall//31
 	.long sys_ni_syscall//32

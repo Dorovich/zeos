@@ -24,4 +24,3 @@ int cbuffer_full(struct cbuffer *b) {
     if (b->head == (b->tail+1)%CBUFFER_SIZE) return 1;
     return 0;
 }
-

@@ -37,9 +37,9 @@ SYSOBJ = \
 	msr.o \
 	pagefault.o \
 	switch.o \
-	shared.o \
 	stats.o \
 	cbuffer.o \
+	shared.o \
 
 LIBZEOS = -L . -l zeos
 
@@ -91,8 +91,8 @@ wrappers.s: wrappers.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 sys_call_table.s: sys_call_table.S $(INCLUDEDIR)/asm.h $(INCLUDEDIR)/segment.h
 	$(CPP) $(ASMFLAGS) -o $@ $<
 
-user.o:user.c $(INCLUDEDIR)/libc.h
-	gcc -m32 -g -fno-omit-frame-pointer -ffreestanding -Wall -Iinclude -fno-PIC   -c -o user.o user.c 
+user.o:user.c $(INCLUDEDIR)/libc.h $(INCLUDEDIR)/colors.h
+	gcc -m32 -g -fno-omit-frame-pointer -ffreestanding -Wall -Iinclude -fno-PIC -c -o user.o user.c 
 
 interrupt.o:interrupt.c $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h $(INCLUDEDIR)/libc.h
 
@@ -102,7 +102,7 @@ sched.o:sched.c $(INCLUDEDIR)/sched.h
 
 libc.o:libc.c $(INCLUDEDIR)/libc.h
 
-shared.o:shared.c $(INCLUDEDIR)/shared.h
+shared.o:shared.c $(INCLUDEDIR)/shared.h $(INCLUDEDIR)/libc.h
 
 mm.o:mm.c $(INCLUDEDIR)/types.h $(INCLUDEDIR)/mm.h
 

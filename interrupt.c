@@ -9,10 +9,9 @@
 
 #include <zeos_interrupt.h>
 
-#include <cbuffer.h>
-#include <devices.h>
-
+#include <shared.h>
 #include <libc.h>
+#include <cbuffer.h>
 
 /* este include y struct externo son para llamar al task_switch desde aqui */
 #include <sched.h>
@@ -25,17 +24,16 @@ void writeMSR(int number, int value);
 int get_fault_eip();
 
 struct cbuffer keyboard_buffer;
-
-extern struct list_head readyqueue;
+struct list_head keyboard_blocked;
 
 char char_map[] =
 {
   '\0','\0','1','2','3','4','5','6',
-  '7','8','9','0','\'','ก','\0','\0',
+  '7','8','9','0','\'','ยก','\0','\0',
   'q','w','e','r','t','y','u','i',
   'o','p','`','+','\0','\0','a','s',
-  'd','f','g','h','j','k','l','๑',
-  '\0','บ','\0','็','z','x','c','v',
+  'd','f','g','h','j','k','l','รฑ',
+  '\0','ยบ','\0','รง','z','x','c','v',
   'b','n','m',',','.','-','\0','*',
   '\0','\0','\0','\0','\0','\0','\0','\0',
   '\0','\0','\0','\0','\0','\0','\0','7',
@@ -113,16 +111,22 @@ void setIdt()
 
 void keyboard_routine()
 {
-	unsigned char data = inb(0x60);
-	if ((data & 0x80) == 0) {
-		if (!cbuffer_full(&keyboard_buffer)) {
-			cbuffer_push(&keyboard_buffer, char_map[data & 0x7F]);
-			struct list_head *e = list_first(&blocked);
-			list_del(e);
-			struct task_struct *t = list_entry(e, struct task_struct, list);
-			update_process_state_rr(t, &readyqueue);
-		}
-	}
+    update_user_to_system_ticks();
+    
+    unsigned char data = inb(0x60);
+    if (!cbuffer_full(&keyboard_buffer) && (data & 0x80) == 0) {
+        unsigned char c = char_map[data & 0x7F];
+        if (!list_empty(&keyboard_blocked)) {
+            struct list_head *e = list_first(&keyboard_blocked);
+            struct task_struct *t = list_entry(e, struct task_struct, list);
+            t->keyboard_read = c;
+            update_process_state_rr(t, &readyqueue);
+        } else {
+            cbuffer_push(&keyboard_buffer, c);
+        }
+    }
+    
+    update_system_to_user_ticks();
 }
 
 void clock_routine()
@@ -130,16 +134,16 @@ void clock_routine()
     ++zeos_ticks;
     zeos_show_clock();
 
-    struct list_head *l;
+    struct list_head *e, *n;
     struct task_struct *t;
-    list_for_each(l, &blocked) {
-	t = list_entry(l, struct task_struct, list);
-    	if (t->timeout >= zeos_ticks) {
-		t->timeout = -1;
-		update_process_state_rr(t, &readyqueue);
+    list_for_each_safe(e, n, &keyboard_blocked) {
+	t = list_entry(e, struct task_struct, list);
+        t->timeout--;
+    	if (t->timeout <= 0) {
+            update_process_state_rr(t, &readyqueue);
 	}
     }
-
+    
     schedule();
 }
 
@@ -147,7 +151,6 @@ void page_fault_routine_custom()
 {
     char addr_buf[32];
     int addr = get_fault_eip();
-    //__asm__ __volatile__ ("movl 56(%%ebp), %0" : "=r" (addr));
     itoh(addr, addr_buf);
 
     printk("Process generates a PAGE FAULT exception at EIP: ");

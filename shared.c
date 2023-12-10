@@ -1,4 +1,5 @@
 #include <shared.h>
+#include <libc.h>
 
 void itoh(int a, char *b)
 {

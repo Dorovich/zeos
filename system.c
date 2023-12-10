@@ -11,7 +11,7 @@
 #include <mm.h>
 #include <io.h>
 #include <utils.h>
-#include <zeos_mm.h> /* TO BE DELETED WHEN ADDED THE PROCESS MANAGEMENT CODE TO BECOME MULTIPROCESS */
+//#include <zeos_mm.h> /* TO BE DELETED WHEN ADDED THE PROCESS MANAGEMENT CODE TO BECOME MULTIPROCESS */
 
 #include <devices.h>
 #include <cbuffer.h>
@@ -102,7 +102,7 @@ int __attribute__((__section__(".text.main")))
 
   zeos_ticks = 0;
   cbuffer_init(&keyboard_buffer);
-  INIT_LIST_HEAD(&blocked);
+  INIT_LIST_HEAD(&keyboard_blocked);
   enable_int();
 
   current()->stats.elapsed_total_ticks = get_ticks();
