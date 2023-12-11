@@ -336,3 +336,31 @@ int sys_semDestroy (struct sem_t *s) {
     list_add_tail(&s->sem_list, &sem_freequeue);
     return 0;
 }
+
+char* sys_memRegGet(int num_pages) {
+    page_table_entry *PT = get_PT(current());
+
+    int pag = PAG_LOG_INIT_DATA+NUM_PAG_DATA, found_pag = -1;
+    while (pag<TOTAL_PAGES-num_pages && found_pag<0) {
+        if (PT[pag].entry == 0) {
+            int offset = 1;
+            while (offset < num_pages && PT[pag+offset].entry == 0) ++offset;
+            if (offset == num_pages) found_pag = pag;
+            else pag += offset;
+        }
+        else pag += 1;
+    }
+
+    if (found_pag<0) return -1;
+    for (pag=0; pag<num_pages; ++pag) {
+        int new_frame = alloc_frame();
+        if (new_frame<0) return -1;
+        set_ss_pag(PT, found_pag+pag, new_frame);
+    }
+
+	return (char *)(found_pag<<12);
+}
+
+int sys_memRegDel(char *m) {
+
+}

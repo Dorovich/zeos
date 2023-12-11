@@ -33,8 +33,8 @@ ENTRY (sys_call_table)
 	.long sys_semSignal //28
 	.long sys_semDestroy //29
 	.long sys_ni_syscall//30
-	.long sys_ni_syscall//31
-	.long sys_ni_syscall//32
+	.long sys_memRegGet//31
+	.long sys_memRegDel//32
 	.long sys_ni_syscall//33
 	.long sys_ni_syscall//34
         .long sys_get_stats //35

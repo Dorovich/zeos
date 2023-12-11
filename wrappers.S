@@ -204,3 +204,25 @@ ENTRY(semDestroy)
 	js nok	// if (eax < 0) -->
 	popl %ebp
 	ret
+
+ENTRY(memRegGet)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $31, %eax
+	movl 8(%ebp), %edx;	//s
+	call syscall_sysenter
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
+
+ENTRY(memRegDel)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $32, %eax
+	movl 8(%ebp), %edx;	//s
+	call syscall_sysenter
+	test %eax, %eax
+	js nok	// if (eax < 0) -->
+	popl %ebp
+	ret
