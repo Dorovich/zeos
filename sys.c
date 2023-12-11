@@ -67,12 +67,24 @@ int sys_fork()
         if (parent_PT[pag].entry == 0) temp_entry = pag;
         --pag;
     }
-    if (temp_entry<0) return -1;
-  
+    if (temp_entry<0) {	
+		list_add(e, &freequeue);
+		return -1;
+	}  
+
     // alojar paginas de datos para el hijo y copiar los del padre
     for (pag=0; pag<NUM_PAG_DATA; pag++) {
         new_frame = alloc_frame();
-        if (new_frame < 0) return -1;
+        if (new_frame<0) {
+			// desalojar frames en caso de error
+			for (pag; pag >= 0; --pag) {
+				free_frame(child_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
+				del_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag);
+			}
+			del_ss_pag(parent_PT, temp_entry);
+			list_add(e, &freequeue);
+			return -1;
+		}
       
         set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
         set_ss_pag(parent_PT, temp_entry, new_frame);
@@ -83,6 +95,33 @@ int sys_fork()
       
         set_cr3(current()->dir_pages_baseAddr); // flush TLB
     }
+   
+	if (current()->TID > 0) {
+		int parent_stack_size = current()->temp_stack_size;
+		int parent_stack_init = current()->temp_stack_addr;
+		for (pag=0; pag<parent_stack_size; pag++) {
+        	new_frame = alloc_frame();
+        	if (new_frame<0) {
+				// desalojar frames en caso de error
+				for (pag; pag >= 0; --pag) {
+					free_frame(child_PT[parent_stack_init+pag].bits.pbase_addr);
+					del_ss_pag(child_PT, parent_stack_init+pag);
+				}
+				del_ss_pag(parent_PT, temp_entry);
+				list_add(e, &freequeue);
+				return -1;
+			}
+      
+        	set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
+        	set_ss_pag(parent_PT, temp_entry, new_frame);
+      
+        	void *parent_page = (void *)((PAG_LOG_INIT_DATA+pag)<<12);
+        	void *child_page = (void *)(temp_entry<<12);
+        	copy_data(parent_page, child_page, PAGE_SIZE);
+      
+        	set_cr3(current()->dir_pages_baseAddr); // flush TLB
+    	}
+	}
 
     del_ss_pag(parent_PT, temp_entry);
     set_cr3(current()->dir_pages_baseAddr);
@@ -206,11 +245,13 @@ int sys_waitKey(char *b, int timeout) {
     return -1;
 }
 
-int sys_gotoXY (int x, int y) {
+int sys_gotoXY (int x, int y) {    
+    if (x < 0 || x >= 80 || y < 0 || y >= 25) return -1;
     return point_to(x, y, point.fg, point.bg);
 }
 
 int sys_changeColor (int fg, int bg) {
+    if (fg < 0 || bg < 0) return -1;
     return point_to(point.x, point.y, fg, bg);
 }
 
@@ -219,6 +260,7 @@ int sys_clrscr (char *b) {
 }
 
 int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *parameter, void *wrapper) {
+    if (function == NULL || N < 0 || wrapper == NULL) return -1;
     /* printk("creando thread. "); */
     
     // pillar un TCB (PCB) libre
@@ -247,10 +289,21 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
     }
 
     // paso 2) alojar frames si se ha encontado la region
-    if (found_pag<0) return -1;
+	if (found_pag<0) {
+		list_add(e, &freequeue);
+		return -1;
+	}
     for (pag=0; pag<N; ++pag) {
         int new_frame = alloc_frame();
-        if (new_frame<0) return -1;
+        if (new_frame<0) {
+			// deallocar frames en case de error
+			for (pag; pag >= 0; --pag) {
+				free_frame(PT[found_pag-pag].bits.pbase_addr);
+				del_ss_pag(PT, found_pag-pag);
+			}
+			list_add(e, &freequeue);
+			return -1;
+		}
         set_ss_pag(PT, found_pag-pag, new_frame);
     }
 
@@ -351,14 +404,14 @@ char* sys_memRegGet(int num_pages) {
         else pag += 1;
     }
 
-    if (found_pag<0) return -1;
+    if (found_pag<0) return NULL;
     for (pag=0; pag<num_pages; ++pag) {
         int new_frame = alloc_frame();
-        if (new_frame<0) return -1;
+        if (new_frame<0) return NULL;
         set_ss_pag(PT, found_pag+pag, new_frame);
     }
 
-	return (char *)(found_pag<<12);
+    return (char *)(found_pag<<12);
 }
 
 int sys_memRegDel(char *m) {

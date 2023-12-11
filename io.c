@@ -10,12 +10,10 @@
 /** Screen  ***/
 /**************/
 
+#define NUM_ROWS 25
 #define NUM_COLUMNS 80
-#define NUM_ROWS    25
 
 struct pointer_struct point;
-
-Byte x, y=19;
 
 /* Read a byte from 'port' */
 Byte inb (unsigned short port)
@@ -88,12 +86,6 @@ void printk(char *string)
 }
 
 int point_to (int x, int y, int fg, int bg) {
-
-    /*
-      TODO: cambiar el uso de 'x' e 'y' en este archivo por 'point.x' y 'point.y'
-    */
-    
-    if (x < 0 || x > NUM_COLUMNS || y < 0 || y > NUM_ROWS) return -1;
     point.x = x;
     point.y = y;
     point.fg = fg;
