@@ -96,32 +96,31 @@ int sys_fork()
         set_cr3(current()->dir_pages_baseAddr); // flush TLB
     }
    
-	if (current()->TID > 0) {
-		int parent_stack_size = current()->temp_stack_size;
-		int parent_stack_init = current()->temp_stack_addr;
-		for (pag=0; pag<parent_stack_size; pag++) {
-        	new_frame = alloc_frame();
-        	if (new_frame<0) {
-				// desalojar frames en caso de error
-				for (pag; pag >= 0; --pag) {
-					free_frame(child_PT[parent_stack_init+pag].bits.pbase_addr);
-					del_ss_pag(child_PT, parent_stack_init+pag);
-				}
-				del_ss_pag(parent_PT, temp_entry);
-				list_add(e, &freequeue);
-				return -1;
+	// copiar la pila temporal de los threads (task1 y sus hijos no entrarán aqui)
+	int parent_stack_size = current()->temp_stack_size;
+	int parent_stack_init = current()->temp_stack_addr;
+	for (pag=0; pag<parent_stack_size; pag++) {
+       	new_frame = alloc_frame();
+       	if (new_frame<0) {
+			// desalojar frames en caso de error
+			for (pag; pag >= 0; --pag) {
+				free_frame(child_PT[parent_stack_init+pag].bits.pbase_addr);
+				del_ss_pag(child_PT, parent_stack_init+pag);
 			}
-      
-        	set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
-        	set_ss_pag(parent_PT, temp_entry, new_frame);
-      
-        	void *parent_page = (void *)((PAG_LOG_INIT_DATA+pag)<<12);
-        	void *child_page = (void *)(temp_entry<<12);
-        	copy_data(parent_page, child_page, PAGE_SIZE);
-      
-        	set_cr3(current()->dir_pages_baseAddr); // flush TLB
-    	}
-	}
+			del_ss_pag(parent_PT, temp_entry);
+			list_add(e, &freequeue);
+			return -1;
+		}
+		// TODO hacer que la pila se copie justo despues de DATA
+       	set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
+       	set_ss_pag(parent_PT, temp_entry, new_frame);
+     
+       	void *parent_page = (void *)((PAG_LOG_INIT_DATA+pag)<<12);
+       	void *child_page = (void *)(temp_entry<<12);
+       	copy_data(parent_page, child_page, PAGE_SIZE);
+     
+       	set_cr3(current()->dir_pages_baseAddr); // flush TLB
+   	}
 
     del_ss_pag(parent_PT, temp_entry);
     set_cr3(current()->dir_pages_baseAddr);
