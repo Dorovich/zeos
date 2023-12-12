@@ -63,5 +63,13 @@ main(void)
     ret = threadCreateWithStack(writer, 1, NULL);
     if (ret<0) error();
 
+    char *cosa = memRegGet(3);
+    for (int i = 0; i<10; ++i) {
+        cosa[i] = 'a'+i;
+    }
+    cosa[10] = '\0';
+    write(1, cosa, strlen(cosa));
+    memRegDel(cosa);
+
     while(1);
 }

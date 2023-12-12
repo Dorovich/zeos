@@ -209,7 +209,7 @@ ENTRY(memRegGet)
 	pushl %ebp
 	movl %esp, %ebp
 	movl $31, %eax
-	movl 8(%ebp), %edx;	//s
+	movl 8(%ebp), %edx;	//num_pages
 	call syscall_sysenter
 	test %eax, %eax
 	js nok	// if (eax < 0) -->
@@ -220,7 +220,7 @@ ENTRY(memRegDel)
 	pushl %ebp
 	movl %esp, %ebp
 	movl $32, %eax
-	movl 8(%ebp), %edx;	//s
+	movl 8(%ebp), %edx;	//m
 	call syscall_sysenter
 	test %eax, %eax
 	js nok	// if (eax < 0) -->

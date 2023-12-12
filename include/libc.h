@@ -44,4 +44,8 @@ int semSignal(struct sem_t *s);
 
 int semDestroy(struct sem_t *s);
 
+char *memRegGet(int num_pages);
+
+int memRegDel(char *m);
+
 #endif  /* __LIBC_H__ */

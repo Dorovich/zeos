@@ -309,6 +309,7 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
                 del_ss_pag(PT, found_pag-pag);
             }
             list_add(e, &freequeue);
+            set_cr3(get_DIR(current()));
             return -1;
         }
         set_ss_pag(PT, found_pag-pag, new_frame);
@@ -398,8 +399,10 @@ int sys_semDestroy (struct sem_t *s) {
 }
 
 char* sys_memRegGet(int num_pages) {
+    if (num_pages<=0) return NULL;
     page_table_entry *PT = get_PT(current());
 
+    // buscar entradas consecutivas libres de la TP
     int pag = PAG_LOG_INIT_DATA+NUM_PAG_DATA, found_pag = -1;
     while (pag<TOTAL_PAGES-num_pages && found_pag<0) {
         if (PT[pag].entry == 0) {
@@ -411,16 +414,36 @@ char* sys_memRegGet(int num_pages) {
         else pag += 1;
     }
 
+    // alojar frames para las paginas
     if (found_pag<0) return NULL;
     for (pag=0; pag<num_pages; ++pag) {
         int new_frame = alloc_frame();
-        if (new_frame<0) return NULL;
+        if (new_frame<0) {
+            for (pag = pag-1; pag>=0; --pag) {
+                free_frame(PT[found_pag+pag].bits.pbase_addr);
+                del_ss_pag(PT, found_pag+pag);   
+            }
+            set_cr3(get_DIR(current()));
+            return NULL;
+        }
         set_ss_pag(PT, found_pag+pag, new_frame);
     }
 
-    return (char *)(found_pag<<12);
+    *(int *)(found_pag<<12) = num_pages;
+
+    return (char *)((found_pag<<12)+sizeof(int));
 }
 
 int sys_memRegDel(char *m) {
+    if (m == NULL) return -1;
 
+    page_table_entry *PT = get_PT(current());
+    int pag, pages_to_rm = (int)*(m-sizeof(int)), init_pag = (int)m>>12;
+    for (pag = 0; pag<pages_to_rm; pag++) {
+        free_frame(PT[init_pag+pag].bits.pbase_addr);
+        del_ss_pag(PT, init_pag+pag);
+    }
+    set_cr3(get_DIR(current()));
+
+    return 0;
 }
