@@ -15,7 +15,19 @@ void error() {
     write(1, str, sizeof(str));
 }
 
+void message() {
+    char str[64] = "(HOLA!)";
+    write(1, str, sizeof(str));
+}
+
 void writer (void *ingored) {
+    if (fork() == 0) {
+        gotoXY(9, 20);
+        changeColor(C_LIGHTGREEN, C_BLUE);
+        message();
+        exit();
+    }
+
     int ret = waitKey(&letter, 60);
     if (ret<0) semDestroy(semaforo);
     else semSignal(semaforo);

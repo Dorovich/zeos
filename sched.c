@@ -97,7 +97,7 @@ void init_task1(void)
     INIT_LIST_HEAD(&t->list);
     t->called_to_die = 0;
     t->temp_stack_size = 0;
-	set_quantum(t, 100);
+    set_quantum(t, 100);
     allocate_DIR(t);
     set_user_pages(t);
 

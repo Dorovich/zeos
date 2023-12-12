@@ -48,6 +48,7 @@ int sys_fork()
     allocate_DIR(t);
 
     page_table_entry *child_PT = get_PT(t), *parent_PT = get_PT(current());
+    page_table_entry *parent_DIR = get_DIR(current());
     int new_frame, pag;
 
     // copiar paginas del kernel
@@ -68,23 +69,24 @@ int sys_fork()
         --pag;
     }
     if (temp_entry<0) {	
-		list_add(e, &freequeue);
-		return -1;
-	}  
+        list_add(e, &freequeue);
+        return -1;
+    }  
 
     // alojar paginas de datos para el hijo y copiar los del padre
     for (pag=0; pag<NUM_PAG_DATA; pag++) {
         new_frame = alloc_frame();
         if (new_frame<0) {
-			// desalojar frames en caso de error
-			for (pag; pag >= 0; --pag) {
-				free_frame(child_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
-				del_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag);
-			}
-			del_ss_pag(parent_PT, temp_entry);
-			list_add(e, &freequeue);
-			return -1;
-		}
+            // desalojar frames en caso de error
+            for (pag = pag-1; pag >= 0; --pag) {
+                free_frame(child_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
+                del_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag);
+            }
+            del_ss_pag(parent_PT, temp_entry);
+            set_cr3(parent_DIR);
+            list_add(e, &freequeue);
+            return -1;
+        }
       
         set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
         set_ss_pag(parent_PT, temp_entry, new_frame);
@@ -93,37 +95,42 @@ int sys_fork()
         void *child_page = (void *)(temp_entry<<12);
         copy_data(parent_page, child_page, PAGE_SIZE);
       
-        set_cr3(current()->dir_pages_baseAddr); // flush TLB
+        set_cr3(parent_DIR); // flush TLB
     }
    
-	// copiar la pila temporal de los threads (task1 y sus hijos no entrarán aqui)
-	int parent_stack_size = current()->temp_stack_size;
-	int parent_stack_init = current()->temp_stack_addr;
-	for (pag=0; pag<parent_stack_size; pag++) {
+    // copiar la pila temporal de los threads (task1 y sus hijos no entrarán aqui)
+    int parent_stack_size = current()->temp_stack_size;
+    int parent_stack_init = current()->temp_stack_page;
+    for (pag=0; pag<parent_stack_size; pag++) {
        	new_frame = alloc_frame();
        	if (new_frame<0) {
-			// desalojar frames en caso de error
-			for (pag; pag >= 0; --pag) {
-				free_frame(child_PT[parent_stack_init+pag].bits.pbase_addr);
-				del_ss_pag(child_PT, parent_stack_init+pag);
-			}
-			del_ss_pag(parent_PT, temp_entry);
-			list_add(e, &freequeue);
-			return -1;
-		}
-		// TODO hacer que la pila se copie justo despues de DATA
-       	set_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag, new_frame);
+            // desalojar frames en caso de error
+            for (pag = pag-1; pag >= 0; --pag) {
+                free_frame(child_PT[parent_stack_init-pag].bits.pbase_addr);
+                del_ss_pag(child_PT, parent_stack_init-pag);
+            }
+            for (pag = 0; pag < NUM_PAG_DATA; ++pag) {
+                free_frame(child_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
+                del_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag);
+            }
+            del_ss_pag(parent_PT, temp_entry);
+            set_cr3(parent_DIR);
+            list_add(e, &freequeue);
+            return -1;
+        }
+        // TODO hacer que la pila se copie justo despues de DATA
+       	set_ss_pag(child_PT, parent_stack_init-pag, new_frame);
        	set_ss_pag(parent_PT, temp_entry, new_frame);
      
-       	void *parent_page = (void *)((PAG_LOG_INIT_DATA+pag)<<12);
+       	void *parent_page = (void *)((parent_stack_init-pag)<<12);
        	void *child_page = (void *)(temp_entry<<12);
        	copy_data(parent_page, child_page, PAGE_SIZE);
      
-       	set_cr3(current()->dir_pages_baseAddr); // flush TLB
-   	}
+       	set_cr3(parent_DIR); // flush TLB
+    }
 
     del_ss_pag(parent_PT, temp_entry);
-    set_cr3(current()->dir_pages_baseAddr);
+    set_cr3(parent_DIR);
   
     // cambiar campos del task_struct del hijo no comunes con el padre
     t->PID = global_PID++;
@@ -155,12 +162,13 @@ void sys_exit()
             free_frame(get_frame(current_PT, PAG_LOG_INIT_DATA+pag));
             del_ss_pag(current_PT, PAG_LOG_INIT_DATA+pag);
         }
-    } else {
-        int base_pag = current()->temp_stack_page;
-        for (pag=0; pag<current()->temp_stack_size; pag++) {
-            free_frame(get_frame(current_PT, base_pag-pag));
-            del_ss_pag(current_PT, base_pag-pag);
-        }
+    }
+    
+    int base_pag = current()->temp_stack_page;
+    int stack_size = current()->temp_stack_size;
+    for (pag=0; pag<stack_size; pag++) {
+        free_frame(get_frame(current_PT, base_pag-pag));
+        del_ss_pag(current_PT, base_pag-pag);
     }
 
     /* printk("exit realizado (PID: "); */
@@ -288,21 +296,21 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
     }
 
     // paso 2) alojar frames si se ha encontado la region
-	if (found_pag<0) {
-		list_add(e, &freequeue);
-		return -1;
-	}
+    if (found_pag<0) {
+        list_add(e, &freequeue);
+        return -1;
+    }
     for (pag=0; pag<N; ++pag) {
         int new_frame = alloc_frame();
         if (new_frame<0) {
-			// deallocar frames en case de error
-			for (pag; pag >= 0; --pag) {
-				free_frame(PT[found_pag-pag].bits.pbase_addr);
-				del_ss_pag(PT, found_pag-pag);
-			}
-			list_add(e, &freequeue);
-			return -1;
-		}
+            // deallocar frames en case de error
+            for (pag; pag >= 0; --pag) {
+                free_frame(PT[found_pag-pag].bits.pbase_addr);
+                del_ss_pag(PT, found_pag-pag);
+            }
+            list_add(e, &freequeue);
+            return -1;
+        }
         set_ss_pag(PT, found_pag-pag, new_frame);
     }
 
