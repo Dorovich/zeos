@@ -6,7 +6,7 @@
 #define SCREEN_HEIGHT   25
 #define SCREEN_WIDTH    80
 
-struct sem_t *sem_input, *sem_update, *sem_main;
+struct sem_t *sem_draw, *sem_update, *sem_main;
 
 #define EMPTY   0
 #define PLAYER  1
@@ -24,6 +24,7 @@ enum moveStates { IDLE, LEFT, RIGHT };
 int move = IDLE;
 int enemyMove = RIGHT;
 int numEnemies = 0;
+int end_game = 0;
 
 void error() {
     char str[64] = "(ERROR!)";
@@ -37,6 +38,7 @@ void print(const char *s) {
 void input(void *ingored) {
     int err;
     while (1) {
+        if (end_game) exit();
         err = waitKey(&c, 1); // hacer que si hasRead == 1 no lea
         if (!err) hasRead = 1;
     }
@@ -44,6 +46,8 @@ void input(void *ingored) {
 
 void update(void *ignored) {
     while (1) {
+        if (end_game) exit();
+        semWait(sem_draw);
         // HANDLES INPUTS
         if (hasRead) {
             switch (c) {
@@ -51,16 +55,19 @@ void update(void *ignored) {
                 // disparar
                 break;
             case 'a':
-                move = 1;
+                move = LEFT;
                 break;
             case 'd':
-                move = 2;
+                move = RIGHT;
+                break;
+            case 'k':
+                semSignal(sem_main);
                 break;
             }
             hasRead = 0;
         }
 
-        // HANDLES ENEMY DIRACTION CHANGES
+        // HANDLES ENEMY DIRECTION CHANGES
         for (int i = 0; i < SCREEN_HEIGHT; ++i) {
             if (enemyMove == LEFT && screen[i][0]) {
                 enemyMove = RIGHT;
@@ -124,6 +131,7 @@ void update(void *ignored) {
 
 void draw(void *ignored) {
     while (1) {
+        if (end_game) exit();
         semWait(sem_update);
         for (int i = 0; i < SCREEN_HEIGHT; ++i) {
             for (int j = 0; j < SCREEN_WIDTH; ++j) {
@@ -151,6 +159,16 @@ void draw(void *ignored) {
                 }
             }
         }
+        semSignal(sem_draw);
+    }
+}
+
+void init_screen () {
+    for (int i = 0; i < SCREEN_HEIGHT; ++i) {
+        for (int j = 0; j < SCREEN_WIDTH; ++j) {
+            if (i%2 == 1 && i < 10 && j%2 == 1 && j < 30) screen[i][j] = ENEMY;
+            else screen[i][j] = EMPTY;
+        }
     }
 }
 
@@ -159,11 +177,13 @@ main(void)
 {
     print("   Codigo de usuario ejecutandose:\n");
 
-    /* sem_read = semCreate(0); */
-    sem_update = semCreate(0);
+    sem_update = semCreate(1);
+    sem_draw = semCreate(0);
     sem_main = semCreate(0);
 
     int ret;
+
+    init_screen();
 
     ret = threadCreateWithStack(input, 1, NULL);
     if (ret<0) error();
@@ -178,6 +198,9 @@ main(void)
     /* clrscr(screen); */
 
     semWait(sem_main);
+
+    print("MAIN HA VUELTO\n");
+    end_game = 1;
 
     while(1);
 }

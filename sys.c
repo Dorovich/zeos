@@ -183,9 +183,10 @@ void sys_exit()
     }
 
     struct list_head *e, *n;
+    struct heap_control *hc;
     list_for_each_safe(e, n, &current()->mem_list) {
-        struct heap_control *hc = list_entry(e, struct heap_control, list);
-        list_del(&hc->list);
+        hc = list_entry(e, struct heap_control, list);
+        list_del(e);
         int region_pag = (int)hc>>12;
         for (int i=0; i<hc->size; ++i) {
             free_frame(get_frame(current_PT, region_pag+pag));
@@ -333,7 +334,7 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
         int new_frame = alloc_frame();
         if (new_frame<0) {
             // desalojar frames en case de error
-            for (pag; pag >= 0; --pag) {
+            for (pag = pag-1; pag >= 0; --pag) {
                 free_frame(get_frame(PT, found_pag-pag));
                 del_ss_pag(PT, found_pag-pag);
             }
@@ -349,6 +350,7 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
     t->TID = global_TID++;
     t->temp_stack_page = found_pag;
     t->temp_stack_size = N;
+    if (list_empty(&current()->mem_list)) INIT_LIST_HEAD(&t->mem_list);
 
     // preparar la pila
     int base_addr = (found_pag+1)<<12;
