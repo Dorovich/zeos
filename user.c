@@ -7,9 +7,6 @@ struct sem_t *semaforo;
 char letter;
 /* int counter; */
 
-int add(int a, int b) { return a + b; }
-int addAsm(int a, int b);
-
 void error() {
     char str[64] = "(ERROR!)";
     write(1, str, sizeof(str));

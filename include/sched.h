@@ -23,7 +23,7 @@ extern struct list_head readyqueue;
 extern unsigned int global_PID;
 extern unsigned int global_TID;
 
-enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
+/* enum state_t { ST_RUN, ST_READY, ST_BLOCKED }; */
 
 struct task_struct {
     int PID;			/* Process ID. This MUST be the first field of the struct. */
@@ -38,6 +38,7 @@ struct task_struct {
     int called_to_die;
     int temp_stack_page;
     int temp_stack_size;
+    struct list_head mem_list;
 };
 
 union task_union {

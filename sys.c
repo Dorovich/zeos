@@ -97,6 +97,25 @@ int sys_fork()
       
         set_cr3(parent_DIR); // flush TLB
     }
+
+    // copiar las regiones de memoria que el padre reservo con memRegGet
+    struct list_head *l;
+    list_for_each(l, &current()->mem_list) {
+        struct heap_control *hc = list_entry(l, struct heap_control, list);
+        int region_pag = (int)hc>>12;
+        for (int i=0; i<hc->size; ++i) {
+            new_frame = alloc_frame();
+            
+            set_ss_pag(child_PT, region_pag+i, new_frame);
+            set_ss_pag(parent_PT, temp_entry, new_frame);
+            
+            void *parent_page = (void *)((region_pag+i)<<12);
+            void *child_page = (void *)(temp_entry<<12);
+            copy_data(parent_page, child_page, PAGE_SIZE);
+            
+            set_cr3(parent_DIR); // flush TLB
+        }
+    }
    
     // copiar la pila temporal de los threads (task1 y sus hijos no entrarán aqui)
     int parent_stack_size = current()->temp_stack_size;
@@ -106,11 +125,11 @@ int sys_fork()
        	if (new_frame<0) {
             // desalojar frames en caso de error
             for (pag = pag-1; pag >= 0; --pag) {
-                free_frame(child_PT[parent_stack_init-pag].bits.pbase_addr);
+                free_frame(get_frame(child_PT, parent_stack_init-pag));
                 del_ss_pag(child_PT, parent_stack_init-pag);
             }
             for (pag = 0; pag < NUM_PAG_DATA; ++pag) {
-                free_frame(child_PT[PAG_LOG_INIT_DATA+pag].bits.pbase_addr);
+                free_frame(get_frame(child_PT, PAG_LOG_INIT_DATA+pag));
                 del_ss_pag(child_PT, PAG_LOG_INIT_DATA+pag);
             }
             del_ss_pag(parent_PT, temp_entry);
@@ -118,7 +137,6 @@ int sys_fork()
             list_add(e, &freequeue);
             return -1;
         }
-        // TODO hacer que la pila se copie justo despues de DATA
        	set_ss_pag(child_PT, parent_stack_init-pag, new_frame);
        	set_ss_pag(parent_PT, temp_entry, new_frame);
      
@@ -161,6 +179,17 @@ void sys_exit()
         for (pag=0; pag<NUM_PAG_DATA; pag++) {
             free_frame(get_frame(current_PT, PAG_LOG_INIT_DATA+pag));
             del_ss_pag(current_PT, PAG_LOG_INIT_DATA+pag);
+        }
+    }
+
+    struct list_head *e, *n;
+    list_for_each_safe(e, n, &current()->mem_list) {
+        struct heap_control *hc = list_entry(e, struct heap_control, list);
+        list_del(&hc->list);
+        int region_pag = (int)hc>>12;
+        for (int i=0; i<hc->size; ++i) {
+            free_frame(get_frame(current_PT, region_pag+pag));
+            del_ss_pag(current_PT, region_pag+pag);
         }
     }
     
@@ -303,9 +332,9 @@ int sys_threadCreateWithStack(void (*function)(void *arg), int N, void *paramete
     for (pag=0; pag<N; ++pag) {
         int new_frame = alloc_frame();
         if (new_frame<0) {
-            // deallocar frames en case de error
+            // desalojar frames en case de error
             for (pag; pag >= 0; --pag) {
-                free_frame(PT[found_pag-pag].bits.pbase_addr);
+                free_frame(get_frame(PT, found_pag-pag));
                 del_ss_pag(PT, found_pag-pag);
             }
             list_add(e, &freequeue);
@@ -420,7 +449,7 @@ char* sys_memRegGet(int num_pages) {
         int new_frame = alloc_frame();
         if (new_frame<0) {
             for (pag = pag-1; pag>=0; --pag) {
-                free_frame(PT[found_pag+pag].bits.pbase_addr);
+                free_frame(get_frame(PT, found_pag+pag));
                 del_ss_pag(PT, found_pag+pag);   
             }
             set_cr3(get_DIR(current()));
@@ -429,18 +458,26 @@ char* sys_memRegGet(int num_pages) {
         set_ss_pag(PT, found_pag+pag, new_frame);
     }
 
-    *(int *)(found_pag<<12) = num_pages;
+    // inicializar parte de memoria de control
+    struct heap_control *hc = (struct heap_control *)(found_pag<<12);
+    INIT_LIST_HEAD(&hc->list);
+    list_add_tail(&hc->list, &current()->mem_list);
+    hc->size = num_pages;
 
-    return (char *)((found_pag<<12)+sizeof(int));
+    return (char *)((found_pag<<12)+sizeof(struct heap_control));
 }
 
 int sys_memRegDel(char *m) {
     if (m == NULL) return -1;
 
     page_table_entry *PT = get_PT(current());
-    int pag, pages_to_rm = (int)*(m-sizeof(int)), init_pag = (int)m>>12;
-    for (pag = 0; pag<pages_to_rm; pag++) {
-        free_frame(PT[init_pag+pag].bits.pbase_addr);
+
+    struct heap_control *hc = (struct heap_control *)(m-sizeof(struct heap_control));
+    list_del(&hc->list);
+    
+    int pag, init_pag = (int)m>>12;
+    for (pag = 0; pag<hc->size; pag++) {
+        free_frame(get_frame(PT, init_pag+pag));
         del_ss_pag(PT, init_pag+pag);
     }
     set_cr3(get_DIR(current()));

@@ -26,8 +26,7 @@ page_table_entry pagusr_table[NR_TASKS][TOTAL_PAGES]
   __attribute__((__section__(".data.task")));
 
 /* TSS */
-TSS         tss; 
-
+TSS         tss;
 
 
 /***********************************************/
